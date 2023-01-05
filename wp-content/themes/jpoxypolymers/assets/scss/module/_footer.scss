@@ -1,0 +1,101 @@
+// Footer Content
+.footer {
+   
+    color: #fff;   
+    /* border-top: 1px solid rgba(255,255,255,.3); */
+    background-image: url(../../images/curve.png);
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: top;
+    background-size: cover;
+    .footer-container{
+        background: rgba(175,175,175,0.1);
+        padding-top: 60px;
+        padding-bottom: 30px;
+    }
+    a {
+        text-decoration: none;
+        color: #fff;
+        line-height: 1.5;
+    }
+    @include bp(xl-max) {
+        position: relative;
+        z-index: 1;
+    }
+    .social-media {
+        @include bp(md-max) {
+            justify-content: center;
+            line-height: 1.8;
+        }
+        a{
+            &:hover{
+                color:#19c5e3;
+            }
+        }
+    }
+}
+
+.footer-logo {  
+   margin-right: 0px;
+    position: relative;
+    margin-bottom: 15px;
+    @include bp(md-max) {
+        margin-right: 0;
+        margin-bottom: 15px;
+        width: 100%;
+        text-align: center;
+    }
+    img {
+        width:290px;
+    }
+    // &::after {
+    //     content: "";
+    //     position: absolute;
+    //     top: 0;
+    //     bottom: 0;
+    //     width: 3px;
+    //     background-color: white;
+    //     right: -38px;
+
+    //     @include bp(md-max) {
+    //         display: none;
+    //     }
+    // }
+}
+.footer-links {
+    font-size:15px;
+    @include bp(md-max) {
+        justify-content: center;
+    }
+    address{
+        margin-bottom: 0 !important;
+        display: flex !important;
+        align-items: center;
+    }
+    &#menu-footer-links{
+        margin-left: 17px;
+    }
+    li {
+        display: inline-block;
+        vertical-align: middle;
+        margin-left: 10px;
+        padding-right: 12px;
+        position: relative;
+        &:after {
+            content: "|";
+            position: absolute;
+            left: -13px;
+            top: 3px;
+        }
+    }
+}
+.footer-contents {
+    align-items: flex-end!important;
+    flex-direction: column;
+    @include bp(md-max) {
+        flex-wrap: wrap;
+        text-align: center;
+        justify-content: center !important;
+    }
+}
+// End Footer Content

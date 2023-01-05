@@ -1,0 +1,222 @@
+//**************************** Start Banner Content******************************
+.banner-content {
+    padding: 0;
+    background-color: #0F3764;
+
+    &.home-banner {
+        .banner-inner-content {
+        background-image: url('../../images/BG.jpg') !important;
+        overflow: hidden;
+        .img-content{            
+            text-align: right;
+            position: relative;
+            // &::after{
+            //     content: "";
+            //     height: 142px;
+            //     width: 193px;
+            //     background-image: url(../../images/banner-dot.svg)!important;
+            //     background-size: 100% 100%;
+            //     position: absolute;
+            //     z-index: -1;
+            //     right: 0;
+            //     bottom: -28px;
+            // }
+            // &::before{
+            //     content: '';
+            //     height: 142px;
+            //     width: 193px;
+            //     background-image: url('../../images/banner-dots2.svg') !important;
+            //     background-size: 100% 100%;
+            //     position: absolute;
+            //     z-index: -1;
+            //     top: 35px;
+            //     left: 25px
+            // }
+            img{
+                object-fit: cover;
+                width: 450px !important;
+                height: 450px !important;
+                border-radius: 50%;
+               
+            }
+            video{
+                height: 470px;
+                object-fit: cover;
+                border: 15px solid #fff;
+                border-radius: 15px;
+                position: relative;
+                right: -94px;
+                top:40px;
+            }
+        }
+        }
+    }
+    .banner-inner-content {
+        background-size: cover;
+        background-position: center center;
+        position: relative;
+        min-height: 80vh;       
+        padding-top: 60px;
+        padding-bottom: 60px;
+        display: flex;
+        align-items: center;       
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        z-index: 1;
+        position: relative;   
+        @include bp(sm-max){
+         padding-top: 130px;       
+        }  
+       
+    }
+    &.inner-page-banner {
+        .banner-inner-content {
+            height: 70vh;
+            min-height: 300px;
+            background-color: #969;
+            background-blend-mode: multiply;
+            h1{
+                text-align: center;
+            }
+        }
+    }
+    .text-content {
+        position: relative;
+        @include bp(md-max){
+            text-align: center;
+        }
+        h1 {
+            color: #fff;
+            align-items: center;
+        }
+    }
+    .btn-primary {
+        background-color: #fff;
+        border-color: #fff;
+        color: #0c3761;
+        &:hover {
+            border-color: #fff;
+            color: #fff;
+        }
+    }
+    .overlay.blue {
+        background-color: rgba(6, 30, 54, 0.747);
+    }
+    .down-arrow {
+        position: absolute;
+        right: 49%;
+        bottom: -30px;
+    }
+    .arrow {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        span {
+            display: block;
+            width: 30px;
+            height: 30px;
+            border-bottom: 4px solid #fff;
+            border-right: 4px solid #fff;
+            transform: rotate(45deg);
+            margin: -10px;
+            animation: animate 2s infinite;
+            &:nth-child(2) {
+                animation-delay: -0.2s;
+            }
+            &:nth-child(2) {
+                animation-delay: -0.4s;
+            }
+        }
+    }
+    h1 {
+        margin-bottom: 40px;
+        @include bp(sm-max){
+            margin-bottom: 20px;
+        }
+    }
+    h3 {
+        margin-bottom: 40px;
+        font-weight: normal;
+    }
+    @include bp(lg-max) {
+        background-position: 0px -50px;
+    }
+}
+
+.post-type-archive-webinars,
+.half-banner {
+    position: relative;
+    overflow: hidden;
+    // &::after{
+    //     content: "";
+    //     height: 142px;
+    //     width: 193px;
+    //     background-image: url(../../images/banner-dot.svg)!important;
+    //     background-size: 100% 100%;
+    //     position: absolute;
+    //     z-index: 2;
+    //     right: -75px;
+    //     bottom: -28px;
+    // }
+    // &::before{
+    //     content: "";
+    //     height: 123px;
+    //     width: 150px;
+    //     background-image: url(../../images/banner-dots2.svg)!important;
+    //     background-size: 100% 100%;
+    //     position: absolute;
+    //     z-index: 2;
+    //     top: 82px;
+    //     left: -25px;
+    // }
+    .banner-inner-content {
+        height: 70vh;
+        min-height: 300px;
+        border-bottom-left-radius:100px ;
+        @include bp(md-max){
+            border-bottom-left-radius:30px ;
+        }
+    }
+    .text-content {
+        padding-left: 0;
+        text-align: center;
+        h1{
+            text-align: center;
+        }
+    }
+}
+.half-banner {
+    .col-lg-7 {
+        width: 100% !important;
+        justify-content: center;
+    }
+    .align-items-center {
+        justify-content: center;
+    }
+}
+
+.post-type-archive-webinars,
+.banner-content.inner-page-banner {
+    .slide-content-main {
+        justify-content: center;
+    }
+}
+.post-type-archive-webinars {
+    .banner-content {
+        h1 {
+            color: #fff;
+            align-items: center;
+        }
+    }
+}
+.overlay-banner{
+    .banner-inner-content{
+        background-color: #969;
+        background-blend-mode: multiply;
+        .banner-caption{
+            text-align: center;
+        }
+    }
+}
+// ********************** End Banner Content ***************************************
