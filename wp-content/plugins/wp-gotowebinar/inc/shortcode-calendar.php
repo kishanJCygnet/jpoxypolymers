@@ -118,9 +118,28 @@ function go_to_webinar_calendar( $atts ) {
             highlight_string("<?php\n\$data =\n" . var_export($calendarData, true) . ";\n?>");
             */
             
+            //output the right time for the calendar
+            if( $options['gotowebinar_time_format'] == 'wordpress' ){
+                $time_format = get_option('time_format');
+            } else {
+                $time_format =  $options['gotowebinar_time_format']; 
+            }
+
+            $first_letter_of_time_format = substr($time_format,0,1);
+
+            // var_dump($first_letter_of_time_format);
+
+            if($first_letter_of_time_format == 'g'){
+                $calendar_time_format = 'h(:mm)a';
+            } else {
+                $calendar_time_format = 'H(:mm)a';    
+            }
+
+            //add a filter
+            $calendar_time_format = apply_filters('wp_gotowebinar_calendar_time_format', $calendar_time_format);
+
             
-            
-            $html .= '<div id="calendar-data" data="'.base64_encode(json_encode($calendarData)).'"></div>';
+            $html .= '<div id="calendar-data" data-calendar-time-format="'.$calendar_time_format.'"  data="'.base64_encode(json_encode($calendarData)).'"></div>';
             
             
             $html .= '<div id="calendar"></div>';

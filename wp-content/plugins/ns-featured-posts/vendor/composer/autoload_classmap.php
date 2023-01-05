@@ -7,4 +7,5 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'Composer\\InstalledVersions' => $vendorDir . '/composer/InstalledVersions.php',
+    'Nilambar\\AdminNotice\\Notice' => $vendorDir . '/ernilambar/wp-admin-notice/src/Notice.php',
 );

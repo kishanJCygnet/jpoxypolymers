@@ -100,6 +100,9 @@ class Post extends Model {
 			$post = self::runDynamicMigrations( $post );
 		}
 
+		// Set options object.
+		$post->options = self::getOptionsDefaults( $post->options );
+
 		return apply_filters( 'aioseo_get_post', $post );
 	}
 
@@ -130,6 +133,10 @@ class Post extends Model {
 		}
 
 		$post->twitter_use_og = aioseo()->options->social->twitter->general->useOgData;
+
+		if ( property_exists( $post, 'schema' ) && null === $post->schema ) {
+			$post->schema = self::getDefaultSchemaOptions();
+		}
 
 		return $post;
 	}
@@ -184,8 +191,16 @@ class Post extends Model {
 	 * @return Post       The modified Post object.
 	 */
 	private static function runDynamicSchemaMigration( $post ) {
+		if ( ! property_exists( $post, 'schema' ) ) {
+			return $post;
+		}
+
 		if ( null === $post->schema ) {
 			$post = aioseo()->updates->migratePostSchemaHelper( $post );
+		}
+
+		if ( ! property_exists( $post->schema, 'default' ) ) {
+			$post->schema = self::getDefaultSchemaOptions( $post->schema );
 		}
 
 		return $post;
@@ -283,6 +298,77 @@ class Post extends Model {
 	}
 
 	/**
+	 * Sanitize the keyphrases posted data.
+	 *
+	 * @since 4.2.8
+	 *
+	 * @param  array $data An array containing the keyphrases field data.
+	 * @return array       The sanitized data.
+	 */
+	private static function sanitizeKeyphrases( $data ) {
+		if (
+			! empty( $data['focus']['analysis'] ) &&
+			is_array( $data['focus']['analysis'] )
+		) {
+			foreach ( $data['focus']['analysis'] as &$analysis ) {
+				// Remove unnecessary 'title' and 'description'.
+				unset( $analysis['title'] );
+				unset( $analysis['description'] );
+			}
+		}
+
+		if (
+			! empty( $data['additional'] ) &&
+			is_array( $data['additional'] )
+		) {
+			foreach ( $data['additional'] as &$additional ) {
+				if (
+					! empty( $additional['analysis'] ) &&
+					is_array( $additional['analysis'] )
+				) {
+					foreach ( $additional['analysis'] as &$additionalAnalysis ) {
+						// Remove unnecessary 'title' and 'description'.
+						unset( $additionalAnalysis['title'] );
+						unset( $additionalAnalysis['description'] );
+					}
+				}
+			}
+		}
+
+		return $data;
+	}
+
+	/**
+	 * Sanitize the page_analysis posted data.
+	 *
+	 * @since 4.2.7
+	 *
+	 * @param  array $data An array containing the page_analysis field data.
+	 * @return array       The sanitized data.
+	 */
+	private static function sanitizePageAnalysis( $data ) {
+		if (
+			empty( $data['analysis'] ) ||
+			! is_array( $data['analysis'] )
+		) {
+			return $data;
+		}
+
+		foreach ( $data['analysis'] as &$analysis ) {
+			foreach ( $analysis as $key => $result ) {
+				// Remove unnecessary 'title' and 'description'.
+				foreach ( [ 'title', 'description' ] as $keyToRemove ) {
+					if ( isset( $analysis[ $key ][ $keyToRemove ] ) ) {
+						unset( $analysis[ $key ][ $keyToRemove ] );
+					}
+				}
+			}
+		}
+
+		return $data;
+	}
+
+	/**
 	 * Sanitizes the post data and sets it (or the default value) to the Post object.
 	 *
 	 * @since 4.1.5
@@ -301,8 +387,8 @@ class Post extends Model {
 		$thePost->keywords                    = ! empty( $data['keywords'] ) ? sanitize_text_field( $data['keywords'] ) : null;
 		$thePost->pillar_content              = isset( $data['pillar_content'] ) ? rest_sanitize_boolean( $data['pillar_content'] ) : 0;
 		// TruSEO
-		$thePost->keyphrases                  = ! empty( $data['keyphrases'] ) ? wp_json_encode( $data['keyphrases'] ) : null;
-		$thePost->page_analysis               = ! empty( $data['page_analysis'] ) ? wp_json_encode( $data['page_analysis'] ) : null;
+		$thePost->keyphrases                  = ! empty( $data['keyphrases'] ) ? wp_json_encode( self::sanitizeKeyphrases( $data['keyphrases'] ) ) : null;
+		$thePost->page_analysis               = ! empty( $data['page_analysis'] ) ? wp_json_encode( self::sanitizePageAnalysis( $data['page_analysis'] ) ) : null;
 		$thePost->seo_score                   = ! empty( $data['seo_score'] ) ? sanitize_text_field( $data['seo_score'] ) : 0;
 		// Sitemap
 		$thePost->priority                    = ! empty( $data['priority'] ) ? sanitize_text_field( $data['priority'] ) : null;
@@ -343,8 +429,8 @@ class Post extends Model {
 		$thePost->twitter_image_custom_fields = ! empty( $data['twitter_image_custom_fields'] ) ? sanitize_text_field( $data['twitter_image_custom_fields'] ) : null;
 		// Schema
 		$thePost->schema                      = ! empty( $data['schema'] )
-			? self::getDefaultSchemaOptions( $data['schema'] )
-			: self::getDefaultSchemaOptions();
+			? wp_json_encode( self::getDefaultSchemaOptions( $data['schema'] ) )
+			: wp_json_encode( self::getDefaultSchemaOptions() );
 		$thePost->local_seo                   = ! empty( $data['local_seo'] ) ? wp_json_encode( $data['local_seo'] ) : null;
 		$thePost->limit_modified_date         = isset( $data['limit_modified_date'] ) ? rest_sanitize_boolean( $data['limit_modified_date'] ) : 0;
 		$thePost->updated                     = gmdate( 'Y-m-d H:i:s' );
@@ -456,29 +542,23 @@ class Post extends Model {
 			'analysis' => [
 				'basic'       => [
 					'lengthContent' => [
-						'error'       => 1,
-						'maxScore'    => 9,
-						'score'       => 6,
-						'title'       => __( 'Content', 'all-in-one-seo-pack' ),
-						'description' => __( 'Please add some content first.', 'all-in-one-seo-pack' )
+						'error'    => 1,
+						'maxScore' => 9,
+						'score'    => 6,
 					],
 				],
 				'title'       => [
 					'titleLength' => [
-						'error'       => 1,
-						'maxScore'    => 9,
-						'score'       => 1,
-						'title'       => __( 'Title', 'all-in-one-seo-pack' ),
-						'description' => __( 'Please add a title first.', 'all-in-one-seo-pack' )
+						'error'    => 1,
+						'maxScore' => 9,
+						'score'    => 1,
 					],
 				],
 				'readability' => [
 					'contentHasAssets' => [
-						'error'       => 1,
-						'maxScore'    => 5,
-						'score'       => 0,
-						'title'       => __( 'No content yet', 'all-in-one-seo-pack' ),
-						'description' => __( 'Please add some content first.', 'all-in-one-seo-pack' )
+						'error'    => 1,
+						'maxScore' => 5,
+						'score'    => 0,
 					],
 				]
 			]
@@ -492,41 +572,54 @@ class Post extends Model {
 	 *
 	 * @since 4.2.5
 	 *
-	 * @param  string $existingOptions The existing options in JSON.
-	 * @return string                  The existing options with defaults added in JSON.
+	 * @param  string       $existingOptions The existing options in JSON.
+	 * @param  null|WP_Post $post            The post object.
+	 * @return string                        The existing options with defaults added in JSON.
 	 */
-	public static function getDefaultSchemaOptions( $existingOptions = '' ) {
-		$defaultGraph = aioseo()->schema->getDefaultPostGraph();
+	public static function getDefaultSchemaOptions( $existingOptions = '', $post = null ) {
+		$defaultGraphName = aioseo()->schema->getDefaultPostTypeGraph( $post );
 
 		$defaults = [
-			'blockGraphs'          => [],
-			'customGraphs'         => [],
-			'defaultGraph'         => $defaultGraph,
-			'defaultPostTypeGraph' => $defaultGraph, // This prop is immutable and can be used to restore the default graph in case user removed it before.
-			'graphs'               => []
+			'blockGraphs'  => [],
+			'customGraphs' => [],
+			'default'      => [
+				'data'      => [
+					'Article'             => [],
+					'Course'              => [],
+					'Dataset'             => [],
+					'FAQPage'             => [],
+					'Movie'               => [],
+					'Person'              => [],
+					'Product'             => [],
+					'Recipe'              => [],
+					'Service'             => [],
+					'SoftwareApplication' => [],
+					'WebPage'             => []
+				],
+				'graphName' => $defaultGraphName,
+				'isEnabled' => true,
+			],
+			'graphs'       => []
 		];
 
 		if ( empty( $existingOptions ) ) {
-			return wp_json_encode( $defaults );
+			return json_decode( wp_json_encode( $defaults ) );
 		}
 
-		$existingOptions = array_replace_recursive( $defaults, (array) $existingOptions );
+		$existingOptions = json_decode( wp_json_encode( $existingOptions ), true );
+		$existingOptions = array_replace_recursive( $defaults, $existingOptions );
 
-		// Check if the default schema type changed.
-		if (
-			! empty( $existingOptions['defaultGraph'] ) &&
-			'none' !== $existingOptions['defaultGraph'] &&
-			$defaultGraph !== $existingOptions['defaultGraph']
-		) {
-			$existingOptions['defaultGraph'] = $defaultGraph;
+		if ( isset( $existingOptions['defaultGraph'] ) && ! empty( $existingOptions['defaultPostTypeGraph'] ) ) {
+			$existingOptions['default']['isEnabled'] = ! empty( $existingOptions['defaultGraph'] );
+
+			unset( $existingOptions['defaultGraph'] );
+			unset( $existingOptions['defaultPostTypeGraph'] );
 		}
 
-		// If the default post type graph is empty for whatever reason, reset it.
-		if ( empty( $existingOptions['defaultPostTypeGraph'] ) ) {
-			$existingOptions['defaultPostTypeGraph'] = $defaultGraph;
-		}
+		// Reset the default graph type to make sure it's accurate.
+		$existingOptions['default']['graphName'] = $defaultGraphName;
 
-		return wp_json_encode( $existingOptions );
+		return json_decode( wp_json_encode( $existingOptions ) );
 	}
 
 	/**
@@ -538,7 +631,7 @@ class Post extends Model {
 	 * @return array              The defaults.
 	 */
 	public static function getKeyphrasesDefaults( $keyphrases = '' ) {
-		$keyphrases = json_decode( $keyphrases );
+		$keyphrases = json_decode( (string) $keyphrases );
 		$defaults   = [
 			'focus'      => [
 				'keyphrase' => '',
@@ -570,12 +663,12 @@ class Post extends Model {
 	}
 
 	/**
-	 * Returns the defaults for the keyphrases column.
+	 * Returns the defaults for the options column.
 	 *
 	 * @since 4.2.2
 	 *
-	 * @param  string $options The database keyphrases.
-	 * @return array           The defaults.
+	 * @param  string $options The options.
+	 * @return array           The options with defaults.
 	 */
 	public static function getOptionsDefaults( $options = '' ) {
 		$defaults = [
@@ -589,6 +682,9 @@ class Post extends Model {
 			return json_decode( wp_json_encode( $defaults ) );
 		}
 
-		return $options;
+		$options = json_decode( wp_json_encode( $options ), true );
+		$options = array_replace_recursive( $defaults, $options );
+
+		return json_decode( wp_json_encode( $options ) );
 	}
 }

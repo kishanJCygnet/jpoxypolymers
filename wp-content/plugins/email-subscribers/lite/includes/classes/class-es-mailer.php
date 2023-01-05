@@ -522,7 +522,7 @@ if ( ! class_exists( 'ES_Mailer' ) ) {
 		 */
 		public function get_test_email_subject( $email = '' ) {
 			/* translators: %s: Email address */
-			return 'Email Subscribers: ' . sprintf( esc_html__( 'Test email to %s', 'email-subscribers' ), $email );
+			return 'Icegram Express: ' . sprintf( esc_html__( 'Test email to %s', 'email-subscribers' ), $email );
 		}
 
 		/**
@@ -540,7 +540,7 @@ if ( ! class_exists( 'ES_Mailer' ) ) {
 			<head></head>
 			<body>
 			<p><?php echo esc_html__( 'Congrats, test email was sent successfully!', 'email-subscribers' ); ?></p>
-			<p><?php echo esc_html__( 'Thank you for trying out Email Subscribers. We are on a mission to make the best Email Marketing Automation plugin for WordPress.', 'email-subscribers' ); ?></p>
+			<p><?php echo esc_html__( 'Thank you for trying out Icegram Express. We are on a mission to make the best Email Marketing Automation plugin for WordPress.', 'email-subscribers' ); ?></p>
 			<!-- Start-IG-Code -->
 			<p>
 			<?php
@@ -1775,15 +1775,23 @@ if ( ! class_exists( 'ES_Mailer' ) ) {
 			// Check if it is an campaign email and unsubscribe headers are enabled on the site.
 			if ( $this->unsubscribe_headers_enabled() ) {
 				$unsubscribe_link = $this->get_unsubscribe_link( $this->link_data );
+				$contact_id       = ! empty( $this->link_data['contact_id'] )  ? $this->link_data['contact_id']  : 0;
+				$campaign_id      = ! empty( $this->link_data['campaign_id'] ) ? $this->link_data['campaign_id'] : 0;
+				$message_id       = ! empty( $this->link_data['message_id'] )  ? $this->link_data['message_id']  : 0;
 
 				/* translators: 1. Subscriber email 2. Blog name */
-				$mail_to_subject   = sprintf( __( 'Unsubscribe %1$s from %2$s', 'email-subscribers' ), $email, get_bloginfo( 'name' ) );
+				$mail_to_subject = sprintf( __( 'Unsubscribe %1$s from %2$s', 'email-subscribers' ), $email, get_bloginfo( 'name' ) );
+				$mail_to_body    = "Contact-ID:$contact_id,Campaign-ID:$campaign_id";
+				if ( ! empty( $message_id ) ) {
+					$mail_to_body .= ",Message-ID:$message_id";
+				}
 				$list_unsub_header = sprintf(
 					/* translators: 1. Unsubscribe link 2. Blog admin email */
-					'<%1$s>,<mailto:%2$s?subject=%3$s>',
+					'<%1$s>,<mailto:%2$s?subject=%3$s&body=%4$s>',
 					$unsubscribe_link,
-					get_bloginfo( 'admin_email' ),
-					$mail_to_subject
+					ES_Common::get_admin_email(),
+					$mail_to_subject,
+					$mail_to_body
 				);
 			}
 

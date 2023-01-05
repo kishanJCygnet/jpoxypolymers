@@ -2,31 +2,25 @@
     "packages": [
         {
             "name": "ernilambar/optioner",
-            "version": "1.0.9",
-            "version_normalized": "1.0.9.0",
+            "version": "2.0.7",
+            "version_normalized": "2.0.7.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ernilambar/optioner.git",
-                "reference": "c6959a2b5338e2744dc9b1d3c503f905eabc2be9"
+                "reference": "e16e6a5245e220224c08a4942c60f1b7353a5e4d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ernilambar/optioner/zipball/c6959a2b5338e2744dc9b1d3c503f905eabc2be9",
-                "reference": "c6959a2b5338e2744dc9b1d3c503f905eabc2be9",
+                "url": "https://api.github.com/repos/ernilambar/optioner/zipball/e16e6a5245e220224c08a4942c60f1b7353a5e4d",
+                "reference": "e16e6a5245e220224c08a4942c60f1b7353a5e4d",
                 "shasum": ""
             },
             "require": {
-                "kirki-framework/url-getter": "^1.0",
                 "php": ">=5.6"
             },
-            "time": "2020-07-01T02:03:06+00:00",
+            "time": "2022-09-29T05:32:49+00:00",
             "type": "library",
             "installation-source": "dist",
-            "autoload": {
-                "psr-4": {
-                    "Nilambar\\Optioner\\": "src/"
-                }
-            },
             "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
@@ -47,7 +41,7 @@
             ],
             "support": {
                 "issues": "https://github.com/ernilambar/optioner/issues",
-                "source": "https://github.com/ernilambar/optioner/tree/master"
+                "source": "https://github.com/ernilambar/optioner/tree/2.0.7"
             },
             "install-path": "../ernilambar/optioner"
         },
@@ -100,55 +94,8 @@
                 "source": "https://github.com/ernilambar/wp-admin-notice/tree/1.0.0"
             },
             "install-path": "../ernilambar/wp-admin-notice"
-        },
-        {
-            "name": "kirki-framework/url-getter",
-            "version": "v1.0.5",
-            "version_normalized": "1.0.5.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/kirki-framework/url-getter.git",
-                "reference": "cfe7ea5b51c5e9b5e7d706ed56694f54a972fae2"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/kirki-framework/url-getter/zipball/cfe7ea5b51c5e9b5e7d706ed56694f54a972fae2",
-                "reference": "cfe7ea5b51c5e9b5e7d706ed56694f54a972fae2",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=7.0"
-            },
-            "time": "2021-12-29T16:27:31+00:00",
-            "type": "library",
-            "installation-source": "dist",
-            "autoload": {
-                "psr-4": {
-                    "Kirki\\": "src"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Kirki Framework",
-                    "email": "connect@mapsteps.com"
-                }
-            ],
-            "description": "Helper component to get the URL of a file in WordPress.",
-            "homepage": "https://kirki.org/",
-            "keywords": [
-                "wordpress"
-            ],
-            "support": {
-                "issues": "https://github.com/kirki-framework/url-getter/issues",
-                "source": "https://github.com/kirki-framework/url-getter/tree/v1.0.5"
-            },
-            "install-path": "../kirki-framework/url-getter"
         }
     ],
-    "dev": true,
+    "dev": false,
     "dev-package-names": []
 }

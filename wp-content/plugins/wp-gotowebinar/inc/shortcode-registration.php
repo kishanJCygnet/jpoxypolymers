@@ -221,16 +221,18 @@ function go_to_webinar_registration( $atts ) {
                 $html .= '</div>';     
             }
             //if timezone conversion is enabled show the conversion link
-            if($options['gotowebinar_enable_timezone_conversion'] == 1){
-                $html .= '<p><a class="timezone-convert-link-registration">'.__( 'Convert to my timezone', 'wp-gotowebinar' ).'</a></p>';
-                $html .= '<span id="timezone_error_message" style="display:none;">';
-                
-                if(isset($options['gotowebinar_timezone_error_message']) && strlen($options['gotowebinar_timezone_error_message'])>0){
-                     $html .= $options['gotowebinar_timezone_error_message'];     
-                } else {   
-                     $html .= 'Sorry, your location could not be determined.';
+            if(array_key_exists('gotowebinar_enable_timezone_conversion',$options)){
+                if($options['gotowebinar_enable_timezone_conversion'] == 1){
+                    $html .= '<p><a class="timezone-convert-link-registration">'.__( 'Convert to my timezone', 'wp-gotowebinar' ).'</a></p>';
+                    $html .= '<span id="timezone_error_message" style="display:none;">';
+                    
+                    if(isset($options['gotowebinar_timezone_error_message']) && strlen($options['gotowebinar_timezone_error_message'])>0){
+                        $html .= $options['gotowebinar_timezone_error_message'];     
+                    } else {   
+                        $html .= 'Sorry, your location could not be determined.';
+                    }
+                    $html .= '</span>';     
                 }
-                $html .= '</span>';     
             }
             //description
 

@@ -25,9 +25,9 @@ class Person extends CommonGraphs\Graph {
 	public function get( $graphData = null ) {
 		return [
 			'@type'       => 'Person',
-			'@id'         => ! empty( $graphData->properties->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#person',
+			'@id'         => ! empty( $graphData->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#person',
 			'name'        => ! empty( $graphData->properties->name ) ? $graphData->properties->name : get_the_title(),
-			'description' => ! empty( $graphData->properties->description ) ? $graphData->properties->description : aioseo()->schema->context['description'],
+			'description' => ! empty( $graphData->properties->description ) ? $graphData->properties->description : '',
 			'email'       => ! empty( $graphData->properties->email ) ? $graphData->properties->email : '',
 			'jobTitle'    => ! empty( $graphData->properties->jobTitle ) ? $graphData->properties->jobTitle : '',
 			'image'       => ! empty( $graphData->properties->image ) ? $this->image( $graphData->properties->image ) : $this->getFeaturedImage(),

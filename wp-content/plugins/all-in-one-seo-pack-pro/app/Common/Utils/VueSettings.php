@@ -131,7 +131,14 @@ class VueSettings {
 			'seoAuditChecklist' => 'all-items'
 		],
 		'tablePagination' => [
-			'networkDomains' => 20
+			'networkDomains'             => 20,
+			'redirects'                  => 20,
+			'redirectLogs'               => 20,
+			'redirect404Logs'            => 20,
+			'sitemapAdditionalPages'     => 20,
+			'linkAssistantLinksReport'   => 20,
+			'linkAssistantPostsReport'   => 20,
+			'linkAssistantDomainsReport' => 20
 		]
 	];
 
@@ -264,12 +271,12 @@ class VueSettings {
 	}
 
 	/**
-	 * Gets the default value for an settings.
+	 * Gets the default value for a setting.
 	 *
 	 * @since 4.0.0
 	 *
 	 * @param  string $name The settings name.
-	 * @return void
+	 * @return mixed        The default value.
 	 */
 	public function getDefault( $name ) {
 		return isset( $this->defaults[ $name ] ) ? $this->defaults[ $name ] : null;

@@ -147,10 +147,6 @@ class ES_Admin_Settings {
 						'icon' => '<svg class="w-6 h-6 inline -mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>',
 						'name' => __( 'General', 'email-subscribers' ),
 					),
-					'signup_confirmation' => array(
-						'icon' => '<svg class="w-6 h-6 inline -mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"></path></svg>',
-						'name' => __( 'Notifications', 'email-subscribers' ),
-					),
 					'email_sending'       => array(
 						'icon' => '<svg class="w-6 h-6 inline -mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>',
 						'name' => __( 'Email Sending', 'email-subscribers' ),
@@ -165,7 +161,7 @@ class ES_Admin_Settings {
 						'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 inline -mt-1.5" style="stroke-width:2">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 002.25-2.25V6a2.25 2.25 0 00-2.25-2.25H6A2.25 2.25 0 003.75 6v2.25A2.25 2.25 0 006 10.5zm0 9.75h2.25A2.25 2.25 0 0010.5 18v-2.25a2.25 2.25 0 00-2.25-2.25H6a2.25 2.25 0 00-2.25 2.25V18A2.25 2.25 0 006 20.25zm9.75-9.75H18a2.25 2.25 0 002.25-2.25V6A2.25 2.25 0 0018 3.75h-2.25A2.25 2.25 0 0013.5 6v2.25a2.25 2.25 0 002.25 2.25z" />
 					  </svg>',
-						'name' => __( 'REST API', 'email-subscribers' ),
+						'name' => __( 'API', 'email-subscribers' ),
 					);
 				}
 				$es_settings_tabs = apply_filters( 'ig_es_settings_tabs', $es_settings_tabs );
@@ -284,7 +280,7 @@ class ES_Admin_Settings {
 				'name'    => __( 'Enable AJAX subscription form submission', 'email-subscribers' ),
 				'info'    => __( 'Enabling this will let users to submit their subscription form without page reload using AJAX call.', 'email-subscribers' ),
 				'type'    => 'checkbox',
-				'default' => 'no',
+				'default' => 'yes',
 			),
 
 			'ig_es_track_email_opens'               => array(
@@ -397,7 +393,7 @@ class ES_Admin_Settings {
 				'type'    => 'checkbox',
 				'default' => 'no',
 			),
-
+			
 		);
 
 		$general_settings = apply_filters( 'ig_es_registered_general_settings', $general_settings );
@@ -437,7 +433,7 @@ class ES_Admin_Settings {
 
 		$pepipost_api_key_defined = ES()->is_const_defined( 'pepipost', 'api_key' );
 
-		$test_email = ES_Common::fetch_admin_email();
+		$test_email = ES_Common::get_admin_email();
 
 		$total_emails_sent = ES_Common::count_sent_emails();
 
@@ -459,7 +455,7 @@ class ES_Admin_Settings {
 				'default'      => 'no',
 				'id'           => 'ig_es_disable_wp_cron',
 				'name'         => __( 'Disable Wordpress Cron', 'email-subscribers' ),
-				'info'         => __( 'Enable this option if you do not want Email Subscribers to use WP Cron to send emails.', 'email-subscribers' ),
+				'info'         => __( 'Enable this option if you do not want Icegram Express to use WP Cron to send emails.', 'email-subscribers' ),
 			),
 
 			'ig_es_cron_interval'           => array(
@@ -570,16 +566,16 @@ class ES_Admin_Settings {
 			$rest_api_settings = array(
 				'allow_api' => array(
 					'id'	=> 'ig_es_allow_api',
-					'name'  => __( 'Enable REST API', 'email-subscribers' ),
-					'info'    => __( 'Enable REST API to add/edit/delete subscribers through third-party sites or apps.', 'email-subscribers' ),
+					'name'  => __( 'Enable API', 'email-subscribers' ),
+					'info'    => __( 'Enable API to add/edit/delete subscribers through third-party sites or apps.', 'email-subscribers' ),
 					'type'    => 'checkbox',
 					'default' => 'yes',
 					/* translators: REST API endpoint */
-					'desc' => sprintf( __( 'REST endpoint: %s', 'email-subscribers'), '<code class="es-code">' . $rest_api_endpoint . '</code>' )
+					'desc' => sprintf( __( 'URL endpoint: %s', 'email-subscribers'), '<code class="es-code">' . $rest_api_endpoint . '</code>' )
 				),
 				'api_key_access_section' => array(
 					'id'   => 'ig_es_api_keys_section',
-					'name' => __( 'REST API Keys', 'email-subscribers' ),
+					'name' => __( 'API Keys', 'email-subscribers' ),
 					'type' => 'html',
 					'html' => self::render_rest_api_keys_section(),
 				),
@@ -627,7 +623,7 @@ class ES_Admin_Settings {
 		$html        = ! empty( $arguments['html'] ) ? $arguments['html'] : '';
 		$id_key      = ! empty( $id_key ) ? $id_key : $uid;
 		$class       = ! empty( $arguments['class'] ) ? $arguments['class'] : '';
-		$rows        = ! empty( $arguments['rows'] ) ? $arguments['rows'] : 12;
+		$rows        = ! empty( $arguments['rows'] ) ? $arguments['rows'] : 8;
 		$disabled    = ! empty( $arguments['disabled'] ) ? 'disabled="' . $arguments['disabled'] . '"' : '';
 		$value       = ! empty( $arguments['value'] ) ? $arguments['value'] : $value;
 
@@ -1067,7 +1063,7 @@ class ES_Admin_Settings {
 					'name'    => __( 'Plugin usage tracking', 'email-subscribers' ),
 					'type'    => 'checkbox',
 					'default' => 'no',
-					'info'    => __( 'Help us to improve Email Subscribers by opting in to share non-sensitive plugin usage data.', 'email-subscribers' ),
+					'info'    => __( 'Help us to improve Icegram Express by opting in to share non-sensitive plugin usage data.', 'email-subscribers' ),
 				),
 			);
 
@@ -1185,7 +1181,7 @@ class ES_Admin_Settings {
 				</select>
 				<button type="button" id="ig-es-generate-rest-api-key" class="ig-es-title-button ml-2 align-middle ig-es-inline-loader">
 					<span>
-						<?php echo esc_html__( 'Generate new key', 'email-subscribers' ); ?>
+						<?php echo esc_html__( 'Generate API key', 'email-subscribers' ); ?>
 					</span>
 					<svg class="es-btn-loader animate-spin h-4 w-4 text-indigo"
 									xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

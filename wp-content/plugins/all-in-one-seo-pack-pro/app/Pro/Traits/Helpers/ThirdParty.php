@@ -49,7 +49,7 @@ trait ThirdParty {
 	 *
 	 * @since 4.0.13
 	 *
-	 * @return boolean Whether the plugin is active.
+	 * @return bool Whether the plugin is active.
 	 */
 	public function isWooCommerceBrandsActive() {
 		return class_exists( 'WC_Brands' );
@@ -60,10 +60,21 @@ trait ThirdParty {
 	 *
 	 * @since 4.0.13
 	 *
-	 * @return boolean Whether the plugin is active.
+	 * @return bool Whether the plugin is active.
 	 */
 	public function isPerfectBrandsActive() {
 		return class_exists( '\Perfect_WooCommerce_Brands\Perfect_Woocommerce_Brands' );
+	}
+
+	/**
+	 * Checks if the WooCommerce UPC, EAN & ISBN plugin is active.
+	 *
+	 * @since 4.2.6
+	 *
+	 * @return bool Whether the plugin is active.
+	 */
+	public function isWooCommerceUpcEanIsbnActive() {
+		return class_exists( 'Woo_GTIN' );
 	}
 
 	/**
@@ -71,7 +82,7 @@ trait ThirdParty {
 	 *
 	 * @since 4.0.13
 	 *
-	 * @return boolean Whether EDD is active.
+	 * @return bool Whether EDD is active.
 	 */
 	public function isEddActive() {
 		return class_exists( 'Easy_Digital_Downloads' );
@@ -82,7 +93,7 @@ trait ThirdParty {
 	 *
 	 * @since 4.0.13
 	 *
-	 * @return boolean Whether EDD Reviews is active.
+	 * @return bool Whether EDD Reviews is active.
 	 */
 	public function isEddReviewsActive() {
 		return class_exists( 'EDD_Reviews' );

@@ -29,7 +29,7 @@ class JobPosting extends CommonGraphs\Graph {
 
 		$data = [
 			'@type'                         => 'JobPosting',
-			'@id'                           => ! empty( $graphData->properties->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#jobPosting',
+			'@id'                           => ! empty( $graphData->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#jobPosting',
 			'title'                         => ! empty( $graphData->properties->name ) ? $graphData->properties->name : get_the_title(),
 			'description'                   => ! empty( $graphData->properties->description ) ? $graphData->properties->description : aioseo()->schema->context['description'],
 			'employmentType'                => ! empty( $graphData->properties->employmentType ) ? $graphData->properties->employmentType : '',

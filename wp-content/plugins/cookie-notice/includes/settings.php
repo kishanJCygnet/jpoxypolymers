@@ -211,6 +211,8 @@ class Cookie_Notice_Settings {
 
 		// get cookie compliance status
 		$status = $cn->get_status();
+		$subscription = $cn->get_subscription();
+		$upgrade_link = $cn->get_url( 'host', '?utm_campaign=upgrade+to+pro&utm_source=wordpress&utm_medium=link#/en/cc/dashboard?app-id=' . $cn->options['general']['app_id'] . '&open-modal=payment' );
 
 		echo '
 		<div class="wrap">
@@ -223,16 +225,39 @@ class Cookie_Notice_Settings {
 
 		// compliance enabled
 		if ( $status === 'active' ) {
-			echo '			<h2>We\'re Promoting Privacy&trade;</h2>
-								<p>' . __( 'Promote the privacy of your website visitors without affecting how you do your business.', 'cookie-notice' ) . '</p>';
+				echo '			
+							<div class="cn-pricing-info">
+								<div class="cn-pricing-head">
+									<p>' . __( 'Your Cookie Compliance plan:', 'cookie-notice' ) . '</p>
+									<h2>' . ( $subscription === 'pro' ? __( 'Professional', 'cookie-notice' ) : __( 'Basic', 'cookie-notice' ) ) . '</h2>
+								</div>
+								<div class="cn-pricing-body">
+									<p class="cn-active"><span class="cn-icon"></span>' . __( 'GDPR, CCPA, ePrivacy, PECR compliance', 'cookie-notice' ) . '</p>
+									<p class="cn-active"><span class="cn-icon"></span>' . __( 'Consent Analytics Dashboard', 'cookie-notice' ) . '</p>
+									<p class="' . ( $subscription === 'pro' ? 'cn-active' : 'cn-inactive' ) . '"><span class="cn-icon"></span>' . __( '<b>Unlimited</b> visits', 'cookie-notice' ) . '</p>
+									<p class="' . ( $subscription === 'pro' ? 'cn-active' : 'cn-inactive' ) . '"><span class="cn-icon"></span>' . __( '<b>Lifetime</b> consent storage', 'cookie-notice' ) . '</p>
+									<p class="' . ( $subscription === 'pro' ? 'cn-active' : 'cn-inactive' ) . '"><span class="cn-icon"></span>' . __( '<b>Geolocation</b> support', 'cookie-notice' ) . '</p>
+									<p class="' . ( $subscription === 'pro' ? 'cn-active' : 'cn-inactive' ) . '"><span class="cn-icon"></span>' . __( '<b>Unlimited</b> languages', 'cookie-notice' ) . '</p>
+									<p class="' . ( $subscription === 'pro' ? 'cn-active' : 'cn-inactive' ) . '"><span class="cn-icon"></span>' . __( '<b>Priority</b> Support', 'cookie-notice' ) . '</p>
+								</div>';
+				
+				if ( $subscription !== 'pro' ) {
+					echo '		<div class="cn-pricing-footer">
+									<a href="' . $upgrade_link . '" class="button button-secondary button-hero cn-button" target="_blank">' . __( 'Upgrade to Pro', 'cookie-notice' ) . '</a>
+								</div>';
+				}
+				
+				echo '		</div>';
+				
+		// compliance disabled
 		} else {
-			echo '			<h1><b>Cookie Compliance&trade;</b></h1>
-								<h2>' . __( 'The next generation of Cookie Notice', 'cookie-notice' ) . '</h2>
+			echo '			<h1><b>Protect your business</b></h1>
+								<h2>' . __( 'with Cookie Compliance&trade;', 'cookie-notice' ) . '</h2>
 								<div class="cn-lead">
-									<p>' . __( 'A free web application to help you deliver better consent experiences and comply with GDPR, CCPA and other data privacy laws more effectively.', 'cookie-notice' ) . '</p>
+									<p>' . __( 'Deliver better consent experiences and comply with GDPR, CCPA and other data privacy laws more effectively.', 'cookie-notice' ) . '</p>
 								</div>
 								<img alt="' . __( 'Cookie Compliance dashboard', 'cookie-notice' ) . '" src="' . COOKIE_NOTICE_URL . '/img/screen-compliance.png">
-								<a href="https://cookie-compliance.co/?utm_campaign=learn+more&utm_source=wordpress&utm_medium=banner" class="button button-primary button-hero cn-button" target="_blank">' . __( 'Learn more', 'cookie-notice' ) . '</a>';
+								<p><a href="https://cookie-compliance.co/?utm_campaign=learn+more&utm_source=wordpress&utm_medium=banner" class="button button-secondary button-hero cn-button" target="_blank">' . __( 'Learn more', 'cookie-notice' ) . '</a></p>';
 		}
 
 		echo '
@@ -240,13 +265,12 @@ class Cookie_Notice_Settings {
 						</div>
 					</div>';
 
-		if ( $status !== 'active' ) {
-			echo '
+		echo '
 					<div class="cookie-notice-faq">
 						<h2>' . __( 'F.A.Q.', 'cookie-notice' ) . '</h2>
 						<div class="cn-toggle-container">
 							<label for="cn-faq-1" class="cn-toggle-item">
-								<input id="cn-faq-1" type="checkbox" checked />
+								<input id="cn-faq-1" type="checkbox" />
 								<span class="cn-toggle-heading">' . __( 'Does the Cookie Notice make my site fully compliant with GDPR?', 'cookie-notice' ) . '</span>
 								<span class="cn-toggle-body">' . __( 'It is not possible to provide the required technical compliance features using only a WordPress plugin. Features like consent record storage, purpose categories and script blocking that bring your site into full compliance with GDPR are only available through the Cookie Compliance integration.', 'cookie-notice' ) . '
 							</label>
@@ -267,7 +291,6 @@ class Cookie_Notice_Settings {
 							</label>
 						</div>
 					</div>';
-		}
 
 		echo '
 				</div>';
@@ -344,11 +367,29 @@ class Cookie_Notice_Settings {
 				add_settings_section( 'cookie_notice_network', __( 'Network Settings', 'cookie-notice' ), [ $this, 'cn_network_section' ], 'cookie_notice_options' );
 				add_settings_field( 'cn_dummy', '', '__return_empty_string', 'cookie_notice_options', 'cookie_notice_network' );
 
+				// get default status data
+				$default_data = $cn->defaults['data'];
+
 				// get real status of current site
-				$status = get_option( 'cookie_notice_status', '' );
+				$status_data = get_option( 'cookie_notice_status', $default_data );
+
+				// old status format?
+				if ( ! is_array( $status_data ) ) {
+					// old value saved as string
+					if ( is_string( $status_data ) && $cn->check_status( $status_data ) ) {
+						// update status
+						$default_data['status'] = $status_data;
+
+						if ( $default_data['status'] === 'active' )
+							$default_data['subscription'] = 'pro';
+					}
+
+					// set data
+					$status_data = $default_data;
+				}
 
 				// get valid status
-				$status = $cn->check_status( $status );
+				$status = $cn->check_status( $status_data['status'] );
 			}
 		}
 
@@ -461,13 +502,13 @@ class Cookie_Notice_Settings {
 			case 'active':
 				echo '
 				<div id="cn_app_status">
-					<span class="cn_compliance_status">' . __( 'Notice', 'cookie-notice' ) . ': <label class="cn-active">' . __( 'Active', 'cookie-notice' ) . '</label></span>
-					<span class="cn_compliance_status">' . __( 'Autoblocking', 'cookie-notice' ) . ': <label class="cn-active">' . __( 'Active', 'cookie-notice' ) . '</label></span>
-					<span class="cn_compliance_status">' . __( 'Cookie Categories', 'cookie-notice' ) . ': <label class="cn-active">' . __( 'Active', 'cookie-notice' ) . '</label></span>
-					<span class="cn_compliance_status">' . __( 'Proof-of-Consent', 'cookie-notice' ) . ': <label class="cn-active">' . __( 'Active', 'cookie-notice' ) . '</label></span>
+					<div class="cn_compliance_status"><span class="cn-status-label">' . __( 'Notice', 'cookie-notice' ) . '</span>: <span class="cn-status cn-active"><span class="cn-icon"></span> ' . __( 'Active', 'cookie-notice' ) . '</span></div>
+					<div class="cn_compliance_status"><span class="cn-status-label">' . __( 'Autoblocking', 'cookie-notice' ) . '</span>: <span class="cn-status cn-active"><span class="cn-icon"></span> ' . __( 'Active', 'cookie-notice' ) . '</span></div>
+					<div class="cn_compliance_status"><span class="cn-status-label">' . __( 'Cookie Categories', 'cookie-notice' ) . '</span>: <span class="cn-status cn-active"><span class="cn-icon"></span> ' . __( 'Active', 'cookie-notice' ) . '</span></div>
+					<div class="cn_compliance_status"><span class="cn-status-label">' . __( 'Proof-of-Consent', 'cookie-notice' ) . '</span>: <span class="cn-status cn-active"><span class="cn-icon"></span> ' . __( 'Active', 'cookie-notice' ) . '</span></div>
 				</div>
 				<div id="cn_app_actions">
-					<a href="' . esc_url( $cn->get_url( 'login' ) ) . '" class="button button-primary button-hero cn-button" target="_blank">' . __( 'Log in & Configure', 'cookie-notice' ) . '</a>
+					<a href="' . esc_url( $cn->get_url( 'host', '?utm_campaign=configure&utm_source=wordpress&utm_medium=button#/en/cc/login' ) ) . '" class="button button-primary button-hero cn-button" target="_blank">' . __( 'Log in & Configure', 'cookie-notice' ) . '</a>
 					<p class="description">' . __( 'Log into the Cookie Compliance&trade; web application and configure your Privacy Experience.', 'cookie-notice' ) . '</p>
 				</div>';
 				break;
@@ -475,13 +516,13 @@ class Cookie_Notice_Settings {
 			case 'pending':
 				echo '
 				<div id="cn_app_status">
-					<span class="cn_compliance_status">' . __( 'Notice', 'cookie-notice' ) . ': <label class="cn-active">' . __( 'Active', 'cookie-notice' ) . '</label></span>
-					<span class="cn_compliance_status">' . __( 'Autoblocking', 'cookie-notice' ) . ': <label class="cn-pending">' . __( 'Pending', 'cookie-notice' ) . '</label></span>
-					<span class="cn_compliance_status">' . __( 'Cookie Categories', 'cookie-notice' ) . ': <label class="cn-pending">' . __( 'Pending', 'cookie-notice' ) . '</label></span>
-					<span class="cn_compliance_status">' . __( 'Proof-of-Consent', 'cookie-notice' ) . ': <label class="cn-pending">' . __( 'Pending', 'cookie-notice' ) . '</label></span>
+					<div class="cn_compliance_status"><span class="cn-status-label">' . __( 'Notice', 'cookie-notice' ) . '</span>: <span class="cn-status cn-active"><span class="cn-icon"></span> ' . __( 'Active', 'cookie-notice' ) . '</span></div>
+					<div class="cn_compliance_status"><span class="cn-status-label">' . __( 'Autoblocking', 'cookie-notice' ) . '</span>: <span class="cn-status cn-pending"><span class="cn-icon"></span> ' . __( 'Pending', 'cookie-notice' ) . '</span></div>
+					<div class="cn_compliance_status"><span class="cn-status-label">' . __( 'Cookie Categories', 'cookie-notice' ) . '</span>: <span class="cn-status cn-pending"><span class="cn-icon"></span> ' . __( 'Pending', 'cookie-notice' ) . '</span></div>
+					<div class="cn_compliance_status"><span class="cn-status-label">' . __( 'Proof-of-Consent', 'cookie-notice' ) . '</span>: <span class="cn-status cn-pending"><span class="cn-icon"></span> ' . __( 'Pending', 'cookie-notice' ) . '</span></div>
 				</div>
 				<div id="cn_app_actions">
-					<a href="' . esc_url( $cn->get_url( 'login' ) ) . '" class="button button-primary button-hero cn-button" target="_blank">' . __( 'Log in & configure', 'cookie-notice' ) . '</a>
+					<a href="' . esc_url( $cn->get_url( 'host', '?utm_campaign=configure&utm_source=wordpress&utm_medium=button#/en/cc/login' ) ) . '" class="button button-primary button-hero cn-button" target="_blank">' . __( 'Log in & configure', 'cookie-notice' ) . '</a>
 					<p class="description">' . __( 'Log into the Cookie Compliance&trade; web application and complete the setup process.', 'cookie-notice' ) . '</p>
 				</div>';
 				break;
@@ -494,10 +535,10 @@ class Cookie_Notice_Settings {
 
 				echo '
 				<div id="cn_app_status">
-					<span class="cn_compliance_status">' . __( 'Notice', 'cookie-notice' ) . ': <label class="cn-active">' . __( 'Active', 'cookie-notice' ) . '</label></span>
-					<span class="cn_compliance_status">' . __( 'Autoblocking', 'cookie-notice' ) . ': <label class="cn-inactive">' . __( 'Inactive', 'cookie-notice' ) . '</label></span>
-					<span class="cn_compliance_status">' . __( 'Cookie Categories', 'cookie-notice' ) . ': <label class="cn-inactive">' . __( 'Inactive', 'cookie-notice' ) . '</label></span>
-					<span class="cn_compliance_status">' . __( 'Proof-of-Consent', 'cookie-notice' ) . ': <label class="cn-inactive">' . __( 'Inactive', 'cookie-notice' ) . '</label></span>
+					<div class="cn_compliance_status"><span class="cn-status-label">' . __( 'Notice', 'cookie-notice' ) . '</span>: <span class="cn-status cn-active"><span class="cn-icon"></span> ' . __( 'Active', 'cookie-notice' ) . '</span></div>
+					<div class="cn_compliance_status"><span class="cn-status-label">' . __( 'Autoblocking', 'cookie-notice' ) . '</span>: <span class="cn-status cn-inactive"><span class="cn-icon"></span> ' . __( 'Inactive', 'cookie-notice' ) . '</span></div>
+					<div class="cn_compliance_status"><span class="cn-status-label">' . __( 'Cookie Categories', 'cookie-notice' ) . '</span>: <span class="cn-status cn-inactive"><span class="cn-icon"></span> ' . __( 'Inactive', 'cookie-notice' ) . '</span></div>
+					<div class="cn_compliance_status"><span class="cn-status-label">' . __( 'Proof-of-Consent', 'cookie-notice' ) . '</span>: <span class="cn-status cn-inactive"><span class="cn-icon"></span> ' . __( 'Inactive', 'cookie-notice' ) . '</span></div>
 				</div>
 				<div id="cn_app_actions">
 					<a href="' . esc_url( $url ) . '" class="button button-primary button-hero cn-button cn-run-welcome">' . __( 'Add Compliance features', 'cookie-notice' ) . '</a>
@@ -1004,22 +1045,17 @@ class Cookie_Notice_Settings {
 
 			// set app status
 			if ( ! empty( $input['app_id'] ) && ! empty( $input['app_key'] ) ) {
-				$app_status = esc_attr( $cn->welcome_api->get_app_status( $input['app_id'] ) );
+				$app_data = $cn->welcome_api->get_app_config( $input['app_id'], true );
 
-				if ( $cn->check_status( $app_status ) === 'active' && $cn->options['general']['app_id'] !== $input['app_id'] && $cn->options['general']['app_key'] !== $input['app_key'] ) {
+				if ( $cn->check_status( $app_data['status'] ) === 'active' && $cn->options['general']['app_id'] !== $input['app_id'] && $cn->options['general']['app_key'] !== $input['app_key'] ) {
 					// update analytics data
 					$cn->welcome_api->get_app_analytics( true );
 				}
-
-				if ( $is_network )
-					update_site_option( 'cookie_notice_status', $app_status );
-				else
-					update_option( 'cookie_notice_status', $app_status );
 			} else {
 				if ( $is_network )
-					update_site_option( 'cookie_notice_status', '' );
+					update_site_option( 'cookie_notice_status', $cn->defaults['data'] );
 				else
-					update_option( 'cookie_notice_status', '' );
+					update_option( 'cookie_notice_status', $cn->defaults['data'] );
 			}
 
 			// app blocking
@@ -1134,9 +1170,9 @@ class Cookie_Notice_Settings {
 
 			// purge cache on save
 			if ( $is_network )
-				delete_site_transient( 'cookie_notice_compliance_cache' );
+				delete_site_transient( 'cookie_notice_app_cache' );
 			else
-				delete_transient( 'cookie_notice_compliance_cache' );
+				delete_transient( 'cookie_notice_app_cache' );
 		} elseif ( isset( $_POST['reset_cookie_notice_options'] ) ) {
 			$input = $cn->defaults['general'];
 
@@ -1144,17 +1180,17 @@ class Cookie_Notice_Settings {
 
 			// network area?
 			if ( $is_network ) {
-				// set app status
-				update_site_option( 'cookie_notice_status', '' );
+				// set app data
+				update_site_option( 'cookie_notice_status', $cn->defaults['data'] );
 
 				// purge cache on save
-				delete_site_transient( 'cookie_notice_compliance_cache' );
+				delete_site_transient( 'cookie_notice_app_cache' );
 			} else {
-				// set app status
-				update_option( 'cookie_notice_status', '' );
+				// set app data
+				update_option( 'cookie_notice_status', $cn->defaults['data'] );
 
 				// purge cache on save
-				delete_transient( 'cookie_notice_compliance_cache' );
+				delete_transient( 'cookie_notice_app_cache' );
 			}
 		}
 
@@ -1328,11 +1364,18 @@ class Cookie_Notice_Settings {
 
 		if ( ! current_user_can( apply_filters( 'cn_manage_cookie_notice_cap', 'manage_options' ) ) )
 			echo false;
+		
+		// get main instance
+		$cn = Cookie_Notice();
 
-		if ( Cookie_Notice()->is_network_admin() )
-			delete_site_transient( 'cookie_notice_compliance_cache' );
+		// delete cache
+		if ( $cn->is_network_admin() )
+			delete_site_transient( 'cookie_notice_app_cache' );
 		else
-			delete_transient( 'cookie_notice_compliance_cache' );
+			delete_transient( 'cookie_notice_app_cache' );
+		
+		// request for new config data too
+		$cn->welcome_api->get_app_config( '', true );
 
 		echo true;
 		exit;

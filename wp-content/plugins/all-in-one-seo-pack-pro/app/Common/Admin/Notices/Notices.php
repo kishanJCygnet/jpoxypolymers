@@ -24,6 +24,42 @@ class Notices {
 	private $url = 'https://plugin-cdn.aioseo.com/wp-content/notifications.json';
 
 	/**
+	 * Review class instance.
+	 *
+	 * @since 4.2.7
+	 *
+	 * @var Review
+	 */
+	private $review = null;
+
+	/**
+	 * Migration class instance.
+	 *
+	 * @since 4.2.7
+	 *
+	 * @var Migration
+	 */
+	private $migration = null;
+
+	/**
+	 * Import class instance.
+	 *
+	 * @since 4.2.7
+	 *
+	 * @var Import
+	 */
+	private $import = null;
+
+	/**
+	 * DeprecatedWordPress class instance.
+	 *
+	 * @since 4.2.7
+	 *
+	 * @var DeprecatedWordPress
+	 */
+	private $deprecatedWordPress = null;
+
+	/**
 	 * Class Constructor.
 	 *
 	 * @since 4.0.0
@@ -78,7 +114,7 @@ class Notices {
 		}
 
 		// Schedule the action.
-		aioseo()->helpers->scheduleAsyncAction( 'aioseo_admin_notifications_update' );
+		aioseo()->actionScheduler->scheduleAsync( 'aioseo_admin_notifications_update' );
 
 		// Update the cache.
 		aioseo()->core->networkCache->update( 'admin_notifications_update', time() + DAY_IN_SECONDS );
@@ -323,6 +359,11 @@ class Notices {
 	 * @return void
 	 */
 	public function notices() {
+		// Double check we're actually in the admin before outputting anything.
+		if ( ! is_admin() ) {
+			return;
+		}
+
 		$this->review->maybeShowNotice();
 		$this->migration->maybeShowNotice();
 		$this->import->maybeShowNotice();

@@ -24,15 +24,16 @@ class Book extends CommonGraphs\Graph {
 	 */
 	public function get( $graphData = null ) {
 		$data = [
-			'@type'      => 'Book',
-			'@id'        => ! empty( $graphData->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#book',
-			'name'       => $graphData->properties->name,
-			'author'     => '',
-			'url'        => aioseo()->schema->context['url'],
-			'image'      => ! empty( $graphData->properties->image ) ? $this->image( $graphData->properties->image ) : '',
-			'inLanguage' => aioseo()->helpers->currentLanguageCodeBCP47(),
-			'publisher'  => [ '@id' => trailingslashit( home_url() ) . '#' . aioseo()->options->searchAppearance->global->schema->siteRepresents ],
-			'hasPart'    => []
+			'@type'       => 'Book',
+			'@id'         => ! empty( $graphData->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#book',
+			'name'        => $graphData->properties->name,
+			'description' => ! empty( $graphData->properties->description ) ? $graphData->properties->description : '',
+			'author'      => '',
+			'url'         => aioseo()->schema->context['url'],
+			'image'       => ! empty( $graphData->properties->image ) ? $this->image( $graphData->properties->image ) : '',
+			'inLanguage'  => aioseo()->helpers->currentLanguageCodeBCP47(),
+			'publisher'   => [ '@id' => trailingslashit( home_url() ) . '#' . aioseo()->options->searchAppearance->global->schema->siteRepresents ],
+			'hasPart'     => []
 		];
 
 		if ( ! empty( $graphData->properties->author ) ) {

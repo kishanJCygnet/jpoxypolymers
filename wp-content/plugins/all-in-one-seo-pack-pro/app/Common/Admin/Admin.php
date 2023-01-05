@@ -78,6 +78,8 @@ class Admin {
 	 * @since 4.0.0
 	 */
 	public function __construct() {
+		new SeoAnalysis;
+
 		include_once ABSPATH . 'wp-admin/includes/plugin.php';
 		if (
 			is_network_admin() &&
@@ -410,6 +412,8 @@ class Admin {
 			];
 		}
 
+		$this->adminBarMenuItems[] = aioseo()->standalone->seoPreview->getAdminBarMenuItemNode();
+
 		$htmlSitemapRequested = aioseo()->htmlSitemap->isDedicatedPage;
 		if ( ! is_admin() && ! $htmlSitemapRequested ) {
 			$this->addPageAnalyzerMenuItems();
@@ -699,7 +703,6 @@ class Admin {
 				return;
 			}
 		}
-
 	}
 
 	/**
@@ -810,6 +813,7 @@ class Admin {
 			// We don't want any plugin adding notices to our screens. Let's clear them out here.
 			remove_all_actions( 'admin_notices' );
 			remove_all_actions( 'all_admin_notices' );
+			remove_action( 'admin_print_scripts', 'print_emoji_detection_script' );
 
 			$this->currentPage = $page;
 			add_action( 'admin_enqueue_scripts', [ $this, 'enqueueAssets' ], 11 );
@@ -996,7 +1000,7 @@ class Admin {
 	 */
 	public function scheduleUnescapeData() {
 		aioseo()->core->cache->update( 'unslash_escaped_data_posts', time(), WEEK_IN_SECONDS );
-		aioseo()->helpers->scheduleSingleAction( 'aioseo_unslash_escaped_data_posts', 120 );
+		aioseo()->actionScheduler->scheduleSingle( 'aioseo_unslash_escaped_data_posts', 120 );
 	}
 
 	/**
@@ -1024,7 +1028,7 @@ class Admin {
 			return;
 		}
 
-		aioseo()->helpers->scheduleSingleAction( 'aioseo_unslash_escaped_data_posts', 120, [], true );
+		aioseo()->actionScheduler->scheduleSingle( 'aioseo_unslash_escaped_data_posts', 120, [], true );
 
 		foreach ( $posts as $post ) {
 			$aioseoPost = Models\Post::getPost( $post->post_id );
@@ -1132,13 +1136,11 @@ class Admin {
 				$post->ID
 			);
 
-			if ( ! empty( $post ) ) {
-				$posts[] = [
-					'url'    => str_replace( '__trashed', '', get_permalink( $post ) ),
-					'target' => '/',
-					'type'   => 301
-				];
-			}
+			$posts[] = [
+				'url'    => str_replace( '__trashed', '', get_permalink( $post ) ),
+				'target' => '/',
+				'type'   => 301
+			];
 		}
 
 		if ( empty( $posts ) ) {

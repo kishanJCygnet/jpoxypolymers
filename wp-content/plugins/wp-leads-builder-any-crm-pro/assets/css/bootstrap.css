@@ -5128,6 +5128,7 @@ textarea.form-control-lg {
   border: 0;
   border-radius: 0.25rem;
   opacity: 0.5;
+  background-color: transparent !important;
 }
 .btn-close:hover {
   color: #000;

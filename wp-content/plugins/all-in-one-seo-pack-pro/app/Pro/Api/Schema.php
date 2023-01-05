@@ -153,7 +153,7 @@ class Schema {
 		$postId       = $request['postId'];
 		$graphs       = $request['graphs'];
 		$customGraphs = $request['customGraphs'];
-		$defaultGraph = $request['defaultGraph'];
+		$default      = (object) $request['default'];
 		if ( empty( $postId ) ) {
 			return new \WP_REST_Response( [
 				'success' => false,
@@ -163,7 +163,7 @@ class Schema {
 
 		return new \WP_REST_Response( [
 			'success' => true,
-			'output'  => aioseo()->schema->getValidatorOutput( $postId, $graphs, $customGraphs, $defaultGraph )
+			'output'  => aioseo()->schema->getValidatorOutput( $postId, $graphs, $customGraphs, $default )
 		], 200 );
 	}
 }

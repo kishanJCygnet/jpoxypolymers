@@ -25,9 +25,9 @@ class HowTo extends CommonGraphs\Graph {
 	public function get( $graphData = null ) {
 		$data = [
 			'@type'       => 'HowTo',
-			'@id'         => ! empty( $graphData->properties->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#how-to',
+			'@id'         => ! empty( $graphData->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#how-to',
 			'name'        => ! empty( $graphData->properties->name ) ? $graphData->properties->name : get_the_title(),
-			'description' => ! empty( $graphData->properties->description ) ? $graphData->properties->description : aioseo()->schema->context['description'],
+			'description' => ! empty( $graphData->properties->description ) ? $graphData->properties->description : '',
 			'image'       => ! empty( $graphData->properties->image ) ? $this->image( $graphData->properties->image ) : $this->getFeaturedImage(),
 			'totalTime'   => ! empty( $graphData->properties->totalTime )
 				? aioseo()->helpers->timeToIso8601DurationFormat( $graphData->properties->totalTime->days, $graphData->properties->totalTime->hours, $graphData->properties->totalTime->minutes )

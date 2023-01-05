@@ -20,6 +20,7 @@ class Cookie_Notice_Welcome_API {
 		// actions
 		add_action( 'init', [ $this, 'check_cron' ] );
 		add_action( 'cookie_notice_get_app_analytics', [ $this, 'get_app_analytics' ] );
+		add_action( 'cookie_notice_get_app_config', [ $this, 'get_app_config' ] );
 		add_action( 'wp_ajax_cn_api_request', [ $this, 'api_request' ] );
 	}
 
@@ -218,7 +219,7 @@ class Cookie_Notice_Welcome_API {
 					break;
 				}
 
-				// @todo: check if subscribtion exists
+				// @todo: check if subscription exists
 				$subscription = $this->request(
 					'create_subscription',
 					[
@@ -232,6 +233,21 @@ class Cookie_Notice_Welcome_API {
 				if ( ! empty( $subscription->error ) ) {
 					$response = $subscription->error;
 					break;
+				}
+
+				$status_data = $cn->defaults['data'];
+
+				// update app status
+				if ( $network ) {
+					$status_data = get_site_option( 'cookie_notice_status', $status_data );
+					$status_data['subscription'] = 'pro';
+
+					update_site_option( 'cookie_notice_status', $status_data );
+				} else {
+					$status_data = get_option( 'cookie_notice_status', $status_data );
+					$status_data['subscription'] = 'pro';
+
+					update_option( 'cookie_notice_status', $status_data );
 				}
 
 				$response = $app_id;
@@ -360,18 +376,18 @@ class Cookie_Notice_Welcome_API {
 					update_site_option( 'cookie_notice_options', $cn->options['general'] );
 
 					// purge cache
-					delete_site_transient( 'cookie_notice_compliance_cache' );
+					delete_site_transient( 'cookie_notice_app_cache' );
 
 					// get options
-					$app_config = get_site_transient( 'cookie_notice_app_config' );
+					$app_config = get_site_transient( 'cookie_notice_app_quick_config' );
 				} else {
 					update_option( 'cookie_notice_options', $cn->options['general'] );
 
 					// purge cache
-					delete_transient( 'cookie_notice_compliance_cache' );
+					delete_transient( 'cookie_notice_app_cache' );
 
 					// get options
-					$app_config = get_transient( 'cookie_notice_app_config' );
+					$app_config = get_transient( 'cookie_notice_app_quick_config' );
 				}
 
 				// create quick config
@@ -400,6 +416,7 @@ class Cookie_Notice_Welcome_API {
 					$params['Languages'] = [ $locale_code[0] ];
 
 				$response = $this->request( 'quick_config', $params );
+				$status_data = $cn->defaults['data'];
 
 				if ( $response->status === 200 ) {
 					// notify publish app
@@ -411,18 +428,21 @@ class Cookie_Notice_Welcome_API {
 
 					if ( $response->status === 200 ) {
 						$response = true;
+						$status_data['status'] = 'active';
 
 						// update app status
 						if ( $network )
-							update_site_option( 'cookie_notice_status', 'active' );
+							update_site_option( 'cookie_notice_status', $status_data );
 						else
-							update_option( 'cookie_notice_status', 'active' );
+							update_option( 'cookie_notice_status', $status_data );
 					} else {
+						$status_data['status'] = 'pending';
+
 						// update app status
 						if ( $network )
-							update_site_option( 'cookie_notice_status', 'pending' );
+							update_site_option( 'cookie_notice_status', $status_data );
 						else
-							update_option( 'cookie_notice_status', 'pending' );
+							update_option( 'cookie_notice_status', $status_data );
 
 						// errors?
 						if ( ! empty( $response->error ) )
@@ -435,11 +455,13 @@ class Cookie_Notice_Welcome_API {
 						}
 					}
 				} else {
+					$status_data['status'] = 'pending';
+
 					// update app status
 					if ( $network )
-						update_site_option( 'cookie_notice_status', 'pending' );
+						update_site_option( 'cookie_notice_status', $status_data );
 					else
-						update_option( 'cookie_notice_status', 'pending' );
+						update_option( 'cookie_notice_status', $status_data );
 
 					// errors?
 					if ( ! empty( $response->error ) ) {
@@ -598,12 +620,12 @@ class Cookie_Notice_Welcome_API {
 					update_site_option( 'cookie_notice_options', $cn->options['general'] );
 
 					// purge cache
-					delete_site_transient( 'cookie_notice_compliance_cache' );
+					delete_site_transient( 'cookie_notice_app_cache' );
 				} else {
 					update_option( 'cookie_notice_options', $cn->options['general'] );
 
 					// purge cache
-					delete_transient( 'cookie_notice_compliance_cache' );
+					delete_transient( 'cookie_notice_app_cache' );
 				}
 
 				// create quick config
@@ -617,6 +639,7 @@ class Cookie_Notice_Welcome_API {
 					$params['Languages'] = [ $locale_code[0] ];
 
 				$response = $this->request( 'quick_config', $params );
+				$status_data = $cn->defaults['data'];
 
 				if ( $response->status === 200 ) {
 					// @todo notify publish app
@@ -628,18 +651,21 @@ class Cookie_Notice_Welcome_API {
 
 					if ( $response->status === 200 ) {
 						$response = true;
+						$status_data['status'] = 'active';
 
 						// update app status
 						if ( $network )
-							update_site_option( 'cookie_notice_status', 'active' );
+							update_site_option( 'cookie_notice_status', $status_data );
 						else
-							update_option( 'cookie_notice_status', 'active' );
+							update_option( 'cookie_notice_status', $status_data );
 					} else {
+						$status_data['status'] = 'pending';
+
 						// update app status
 						if ( $network )
-							update_site_option( 'cookie_notice_status', 'pending' );
+							update_site_option( 'cookie_notice_status', $status_data );
 						else
-							update_option( 'cookie_notice_status', 'pending' );
+							update_option( 'cookie_notice_status', $status_data );
 
 						// errors?
 						if ( ! empty( $response->error ) )
@@ -652,11 +678,13 @@ class Cookie_Notice_Welcome_API {
 						}
 					}
 				} else {
+					$status_data['status'] = 'pending';
+
 					// update app status
 					if ( $network )
-						update_site_option( 'cookie_notice_status', 'pending' );
+						update_site_option( 'cookie_notice_status', $status_data );
 					else
-						update_option( 'cookie_notice_status', 'pending' );
+						update_option( 'cookie_notice_status', $status_data );
 
 					// errors?
 					if ( ! empty( $response->error ) ) {
@@ -843,9 +871,9 @@ class Cookie_Notice_Welcome_API {
 
 				// set options
 				if ( $network )
-					set_site_transient( 'cookie_notice_app_config', $options, 24 * HOUR_IN_SECONDS );
+					set_site_transient( 'cookie_notice_app_quick_config', $options, 24 * HOUR_IN_SECONDS );
 				else
-					set_transient( 'cookie_notice_app_config', $options, 24 * HOUR_IN_SECONDS );
+					set_transient( 'cookie_notice_app_quick_config', $options, 24 * HOUR_IN_SECONDS );
 				break;
 
 			case 'select_plan':
@@ -1109,22 +1137,31 @@ class Cookie_Notice_Welcome_API {
 		if ( Cookie_Notice()->get_status() === 'active' ) {
 			if ( ! wp_next_scheduled( 'cookie_notice_get_app_analytics' ) ) {
 				// set schedule
-				wp_schedule_event( time(), 'hourly', 'cookie_notice_get_app_analytics' ); // hourly
+				wp_schedule_event( time(), 'hourly', 'cookie_notice_get_app_analytics' );
 			}
-		} elseif ( wp_next_scheduled( 'cookie_notice_get_app_analytics' ) )
-			wp_clear_scheduled_hook( 'cookie_notice_get_app_analytics' );
+			if ( ! wp_next_scheduled( 'cookie_notice_get_app_config' ) ) {
+				// set schedule
+				wp_schedule_event( time(), 'daily', 'cookie_notice_get_app_config' );
+			}
+		} else {
+			if ( wp_next_scheduled( 'cookie_notice_get_app_analytics' ) )
+				wp_clear_scheduled_hook( 'cookie_notice_get_app_analytics' );
+			
+			if ( wp_next_scheduled( 'cookie_notice_get_app_config' ) )
+				wp_clear_scheduled_hook( 'cookie_notice_get_app_config' );
+		}
 	}
 
 	/**
-	 * Get app config.
+	 * Get app analytics.
 	 *
-	 * @return array
+	 * @param bool $force_update
+	 * @return void
 	 */
 	public function get_app_analytics( $force_update = false ) {
 		// get main instance
 		$cn = Cookie_Notice();
 
-		$result = [];
 		$allow_one_cron_per_hour = false;
 
 		if ( is_multisite() && $cn->is_plugin_network_active() && $cn->network_options['global_override'] ) {
@@ -1159,32 +1196,59 @@ class Cookie_Notice_Welcome_API {
 
 		// get analytics
 		if ( ! empty( $response->data ) ) {
-			$result = ! empty( $response->data ) ? map_deep( (array) $response->data, 'sanitize_text_field' ) : [];
+			$result = map_deep( (array) $response->data, 'sanitize_text_field' );
 
-			// update app status
-			if ( ! empty( $result ) ) {
-				// add time updated
-				$result['lastUpdated'] = date( 'Y-m-d H:i:s', current_time( 'timestamp', true ) );
+			// add time updated
+			$result['lastUpdated'] = date( 'Y-m-d H:i:s', current_time( 'timestamp', true ) );
 
-				if ( $network )
-					update_site_option( 'cookie_notice_app_analytics', $result );
-				else
-					update_option( 'cookie_notice_app_analytics', $result, false );
-			}
+			if ( $network )
+				update_site_option( 'cookie_notice_app_analytics', $result );
+			else
+				update_option( 'cookie_notice_app_analytics', $result, false );
 		}
 	}
-
+	
 	/**
-	 * Get app status.
+	 * Get app config.
 	 *
-	 * @return bool|string
+	 * @param string $app_id
+	 * @param bool $force_update
+	 * @return void|array
 	 */
-	public function get_app_status( $app_id ) {
-		$result = '';
+	public function get_app_config( $app_id = '', $force_update = false ) {
+		// get main instance
+		$cn = Cookie_Notice();
 
-		if ( ! current_user_can( apply_filters( 'cn_manage_cookie_notice_cap', 'manage_options' ) ) )
-			return false;
+		$allow_one_cron_per_hour = false;
 
+		if ( is_multisite() && $cn->is_plugin_network_active() && $cn->network_options['global_override'] ) {
+			if ( empty( $app_id ) )
+				$app_id = $cn->network_options['app_id'];
+
+			$network = true;
+			$allow_one_cron_per_hour = true;
+		} else {
+			if ( empty( $app_id ) )
+				$app_id = $cn->options['general']['app_id'];
+
+			$network = false;
+		}
+
+		// in global override mode allow only one cron per hour
+		if ( $allow_one_cron_per_hour && ! $force_update ) {
+			$blocking = get_site_option( 'cookie_notice_app_blocking', [] );
+
+			// analytics data?
+			if ( ! empty( $blocking ) ) {
+				$updated = strtotime( $blocking['lastUpdated'] );
+
+				// last updated less than an hour?
+				if ( $updated !== false && current_time( 'timestamp', true ) - $updated < 3600 )
+					return;
+			}
+		}
+
+		// get config
 		$response = $this->request(
 			'get_config',
 			[
@@ -1192,18 +1256,48 @@ class Cookie_Notice_Welcome_API {
 			]
 		);
 
-		if ( ! empty( $response->data ) )
-			$result = 'active';
-		else {
+		// get status data
+		$data = $cn->defaults['data'];
+
+		// get config
+		if ( ! empty( $response->data ) ) {
+			// sanitize data
+			$result_raw = map_deep( (array) $response->data, 'sanitize_text_field' );
+
+			// set status
+			$data['status'] = 'active';
+
+			// check subscription
+			if ( ! empty( $result_raw['SubscriptionType'] ) )
+				$data['subscription'] = strtolower( $result_raw['SubscriptionType'] );
+
+			// process blocking data
+			$result = [
+				'categories'	=> ! empty( $result_raw['DefaultCategoryJSON'] ) && is_array( $result_raw['DefaultCategoryJSON'] ) ? $result_raw['DefaultCategoryJSON'] : [],
+				'providers'		=> ! empty( $result_raw['DefaultProviderJSON'] ) && is_array( $result_raw['DefaultProviderJSON'] ) ? $result_raw['DefaultProviderJSON'] : [],
+				'patterns'		=> ! empty( $result_raw['DefaultCookieJSON'] ) && is_array( $result_raw['DefaultCookieJSON'] ) ? $result_raw['DefaultCookieJSON'] : [],
+				'lastUpdated'	=> date( 'Y-m-d H:i:s', current_time( 'timestamp', true ) )
+			];
+
+			if ( $network )
+				update_site_option( 'cookie_notice_app_blocking', $result );
+			else
+				update_option( 'cookie_notice_app_blocking', $result, false );
+		} else {
 			if ( ! empty( $response->error ) ) {
-				if ( $response->error == 'App is not published yet' )
-					$result = 'pending';
+				if ( $response->error == 'App is not puplised yet' )
+					$data['status'] = 'pending';
 				else
-					$result = '';
+					$data['status'] = '';
 			}
 		}
 
-		return $result;
+		if ( $network )
+			update_site_option( 'cookie_notice_status', $data );
+		else
+			update_option( 'cookie_notice_status', $data, false );
+
+		return $data;
 	}
 
 	/**

@@ -77,6 +77,21 @@ var ShareButtons = ( function( $, wp ) {
 		} );
 	  }
 
+		// Disable tool submit.
+		const disableButtons = document.querySelectorAll( '.disable-tool' );
+
+		if ( disableButtons ) {
+			disableButtons.forEach( disableButton => {
+				disableButton.addEventListener( 'click', ( e ) => {
+					e.stopPropagation();
+					e.preventDefault();
+
+					self.updateButtons( disableButton.dataset.button, 'Off' );
+					self.loadPreview( 'turnoff', disableButton.dataset.button );
+				} );
+			} );
+		}
+
 	  // Tabs.
 	  const buttonTabs = document.querySelectorAll( '.sharethis-wrap .tabs-wrap .button-tab' );
 	  const firstTable = document.querySelector( 'table.form-table' );
@@ -124,6 +139,60 @@ var ShareButtons = ( function( $, wp ) {
 		  } );
 		} );
 	  }
+
+		// Add click events to networkselect.
+		const networkTypes = document.querySelectorAll( '.network-type' );
+
+		if ( networkTypes ) {
+			networkTypes.forEach( networkType => {
+				const networkTypeInput = networkType.querySelector( '.item' );
+
+				if ( networkTypeInput ) {
+					networkTypeInput.addEventListener( 'click', ( e ) => {
+						const buttonTab = document.querySelector('.button-tab.engage');
+						const buttonType = buttonTab ? buttonTab.className.replace( 'button-tab ', '').replace( ' engage', '') : 'inline';
+						const selectedType = document.querySelector( '.' + buttonType + '-platform' + ' .network-type.engage' );
+						const manualSelects = document.querySelectorAll( '.' + buttonType + '-platform' + ' .manual-select' );
+						const ssbSelects = document.querySelectorAll( '.' + buttonType + '-platform' + ' .ssb-select' );
+
+						selectedType.classList.remove( 'engage' );
+						selectedType.querySelector( 'input' ).checked = false;
+						e.currentTarget.parentNode.classList.add( 'engage' );
+						e.currentTarget.parentNode.querySelector( 'input' ).checked = true;
+
+						if ( e.currentTarget.parentNode.classList.contains( 'manual-share' ) ) {
+							if ( manualSelects && ssbSelects ) {
+								manualSelects.forEach( manualSelect => {
+									manualSelect.classList.add( 'engage' );
+								} );
+
+								ssbSelects.forEach( ssbSelect => {
+									ssbSelect.classList.remove( 'engage' );
+								} );
+							}
+						} else if ( manualSelects && ssbSelects ) {
+							manualSelects.forEach( manualSelect => {
+								manualSelect.classList.remove( 'engage' );
+							} );
+							ssbSelects.forEach( ssbSelect => {
+								ssbSelect.classList.add( 'engage' );
+							} );
+						}
+
+						self.loadPreview( 'ssb', buttonType );
+					} );
+				}
+			} );
+		}
+
+		// Smart share buttons count change.
+		document.querySelector( '.inline-platform  #social-service-count' ).addEventListener('change',() => {
+			self.loadPreview( '', 'inline' );
+		} );
+
+		document.querySelector( '.sticky-platform #social-service-count' ).addEventListener('change',() => {
+			self.loadPreview( '', 'sticky' );
+		} );
 
 	  // Scroll to anchor in vendor list.
 	  // Send user input to category search AFTER they stop typing.
@@ -718,6 +787,10 @@ var ShareButtons = ( function( $, wp ) {
 		enabled = false,
 		buttonCode = button.toLowerCase();
 
+		let smartShareCount = document.querySelector( '.' + buttonCode + '-platform #social-service-count' );
+		const smartShareButton = document.querySelector( '.' + buttonCode + '-platform .smart-share.engage.network-type' );
+		smartShareCount = smartShareCount ? smartShareCount.value : 6;
+
 	  // Set button var.
 	  button = 'inline' === buttonCode || 'sticky' === buttonCode ? buttonCode + '-share-buttons' : 'gdpr-compliance-tool-v2';
 
@@ -736,7 +809,7 @@ var ShareButtons = ( function( $, wp ) {
 	  }
 
 	  // If newly turned on use selected networks.
-	  if ( 'turnon' === type || undefined !== this.data.buttonConfig[ buttonCode ] && undefined === this.data.buttonConfig[ buttonCode ]['networks'] ) {
+	  if ( 'ssb' === type || 'turnon' === type || undefined !== this.data.buttonConfig[ buttonCode ] && undefined === this.data.buttonConfig[ buttonCode ]['networks'] ) {
 		networks = [];
 
 		$( '.' + buttonCode + '-platform .share-buttons .share-button[data-selected="true"]' ).each( function ( index ) {
@@ -835,6 +908,11 @@ var ShareButtons = ( function( $, wp ) {
 		};
 	  }
 
+		if ( !!smartShareButton ) {
+			config.is_ssb = true;
+			config.num_ssb_networks = smartShareCount;
+		}
+
 	  if ('gdpr-compliance-tool-v2' === button) {
 		var publisherPurposes = [],
 			publisherRestrictions = {};
@@ -896,7 +974,10 @@ var ShareButtons = ( function( $, wp ) {
 		  config['show_total'] = true;
 		  config['labels'] = 'cta';
 		  config['min_count'] = 10;
-		  config['networks'] = ['facebook', 'twitter', 'pinterest', 'email', 'sms', 'sharethis'];
+      config['networks'] = undefined !== typeof this.data.buttonConfig[buttonCode] ||
+      undefined === typeof this.data.buttonConfig[buttonCode]['networks']
+        ? ['facebook', 'twitter', 'pinterest', 'email', 'sms', 'sharethis'] :
+        this.data.buttonConfig[buttonCode]['networks'];
 
 		  $.each( config['networks'], function( index, value ) {
 			$( '.' + buttonCode + '-network-list .share-button[data-network="' + value + '"]' ).attr( 'data-selected', 'true' );
@@ -933,6 +1014,7 @@ var ShareButtons = ( function( $, wp ) {
 		  wp.ajax.post( 'set_button_config', {
 			button: buttonCode,
 			config: config,
+			fresh: this.data.fresh,
 			nonce: this.data.nonce
 		  } );
 
@@ -961,6 +1043,12 @@ var ShareButtons = ( function( $, wp ) {
 			  'config': config
 			};
 
+			if ( ( 'true' === this.data.fresh && false !== this.data.first ) || false !== this.data.first ) {
+				const firstProd = 'sticky' === this.data.first || 'inline' === this.data.first ? this.data.first + '-share-buttons' : this.data.first;
+
+				theData['onboarding_product'] = true === this.data.fresh ? button : firstProd;
+			}
+
 
 			if ( 'undefined' === this.data.secret || undefined === this.data.secret ) {
 			  theData['token'] = this.data.token;
@@ -969,7 +1057,7 @@ var ShareButtons = ( function( $, wp ) {
 			}
 
 			theData = JSON.stringify( theData );
-			console.log(theData );
+
 			// Send new button status value.
 			$.ajax( {
 			  url: 'https://platform-api.sharethis.com/v1.0/property/product',
@@ -978,7 +1066,7 @@ var ShareButtons = ( function( $, wp ) {
 			  contentType: 'application/json; charset=utf-8',
 			  data: theData,
 			  success: function () {
-				if ( 'turnon' === type ) {
+				if ( 'turnon' === type || 'turnoff' === type ) {
 				  location.reload();
 				}
 			  }
@@ -1000,6 +1088,13 @@ var ShareButtons = ( function( $, wp ) {
 		  );
 		}
 	  }
+
+		if (config.is_ssb) {
+			networks = [ 'facebook', 'twitter', 'email', 'sms', 'sharethis', 'linkedin', 'messenger', 'pinterest', 'reddit', 'tumblr' ];
+			config.networks = networks.slice(0, config.num_ssb_networks);
+		}
+
+		delete config.is_ssb;
 
 	  // Make sure mobile button override is set.
 	  config['show_mobile_buttons'] = true;
@@ -1040,6 +1135,32 @@ var ShareButtons = ( function( $, wp ) {
 
 	  if ( undefined === config || undefined === config['radius'] ) {
 		return;
+	  }
+
+	  // Smart share buttons.
+	  if ( undefined !== config['is_ssb'] ) {
+		  const selectedType = document.querySelector( '.' + button  + '-platform .network-type.engage' );
+		  const manualSelects = document.querySelectorAll( '.' + button  + '-platform .manual-select' );
+		  const ssbSelects = document.querySelectorAll( '.' + button  + '-platform .ssb-select' );
+		  const smartButtons = document.querySelector( '.' + button  + '-platform .smart-share.network-type' );
+
+		  selectedType.classList.remove( 'engage' );
+		  selectedType.querySelector( 'input' ).checked = false;
+		  smartButtons.classList.add( 'engage' );
+		  smartButtons.querySelector( 'input' ).checked = true;
+
+		  manualSelects.forEach( manualSelect => {
+			  manualSelect.classList.remove( 'engage' );
+		  } );
+		  ssbSelects.forEach( ssbSelect => {
+			  ssbSelect.classList.add( 'engage' );
+		  } );
+
+		  const ssbCount = document.querySelector( '.' + button + '-platform #social-service-count' );
+
+		  if ( ssbCount ) {
+			  ssbCount.value = config['num_ssb_networks'];
+		  }
 	  }
 
 	  $( '.' + button + '-network-list .share-button' ).each( function() {

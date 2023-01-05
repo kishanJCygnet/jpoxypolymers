@@ -71,7 +71,6 @@ trait Vue {
 				'priority'                    => ! empty( $term->priority ) ? $term->priority : 'default',
 				'frequency'                   => ! empty( $term->frequency ) ? $term->frequency : 'default',
 				'permalink'                   => get_term_link( $termId ),
-				'permalinkPath'               => aioseo()->helpers->leadingSlashIt( aioseo()->helpers->getPermalinkPath( get_term_link( $termId ) ) ),
 				'title'                       => ! empty( $term->title ) ? $term->title : aioseo()->meta->title->getTaxonomyTitle( $taxonomy->taxonomy ),
 				'description'                 => ! empty( $term->description ) ? $term->description : aioseo()->meta->description->getTaxonomyDescription( $taxonomy->taxonomy ),
 				'keywords'                    => ! empty( $term->keywords ) ? $term->keywords : wp_json_encode( [] ),
@@ -120,40 +119,28 @@ trait Vue {
 
 		if ( 'post' === $page ) {
 			$postId = $staticPostId ? $staticPostId : get_the_ID();
-			$post   = get_post( $postId );
-			if ( is_object( $post ) ) {
+			$wpPost = get_post( $postId );
+			if ( is_object( $wpPost ) ) {
 				$dynamicOptions                            = aioseo()->dynamicOptions->noConflict();
 				$data['currentPost']['defaultSchemaType']  = '';
 				$data['currentPost']['defaultWebPageType'] = '';
-				if ( $dynamicOptions->searchAppearance->postTypes->has( $post->post_type ) ) {
-					$data['currentPost']['defaultSchemaType']  = $dynamicOptions->searchAppearance->postTypes->{$post->post_type}->schemaType;
-					$data['currentPost']['defaultWebPageType'] = $dynamicOptions->searchAppearance->postTypes->{$post->post_type}->webPageType;
+				if ( $dynamicOptions->searchAppearance->postTypes->has( $wpPost->post_type ) ) {
+					$data['currentPost']['defaultSchemaType']  = $dynamicOptions->searchAppearance->postTypes->{$wpPost->post_type}->schemaType;
+					$data['currentPost']['defaultWebPageType'] = $dynamicOptions->searchAppearance->postTypes->{$wpPost->post_type}->webPageType;
 				}
 			}
 
-			// Get the initial schema output for the validator.
-			// We need to clone the data to prevent the Schema class from replacing the main types with the subtypes.
 			$clonedSchema = json_decode( wp_json_encode( $data['currentPost']['schema'] ) );
 			$data['schema']['output'] = aioseo()->schema->getValidatorOutput(
 				$postId,
 				$clonedSchema->graphs,
 				$clonedSchema->blockGraphs,
-				$clonedSchema->defaultGraph
+				$clonedSchema->default
 			);
-
-			// We must reset the title for new posts because they will be given a "Auto Draft" one due to the schema class determining the schema output for the validator.
-			global $wp_query;
-			if (
-				'auto-draft' === $wp_query->post->post_status &&
-				__( 'Auto Draft', '' ) === $wp_query->post->post_title && // phpcs:ignore WordPress.WP.I18n.TextDomainMismatch
-				empty( $wp_query->post->post_name )
-			) {
-				$wp_query->post->post_title = '';
-			}
 		}
 
-		$post = $this->getPost();
-		if ( $post && in_array( $post->post_type, [ 'product', 'download' ], true ) ) {
+		$wpPost = $this->getPost();
+		if ( $wpPost && in_array( $wpPost->post_type, [ 'product', 'download' ], true ) ) {
 			$isWooCommerceActive = $this->isWooCommerceActive();
 			$isEddActive         = $this->isEddActive();
 			$data['data']       += [
@@ -163,9 +150,10 @@ trait Vue {
 
 			if ( $isWooCommerceActive ) {
 				$data['data']['wooCommerce'] = [
-					'currencySymbol'            => function_exists( 'get_woocommerce_currency_symbol' ) ? get_woocommerce_currency_symbol() : '$',
-					'isWooCommerceBrandsActive' => $this->isWooCommerceBrandsActive(),
-					'isPerfectBrandsActive'     => $this->isPerfectBrandsActive()
+					'currencySymbol'                => function_exists( 'get_woocommerce_currency_symbol' ) ? get_woocommerce_currency_symbol() : '$',
+					'isPerfectBrandsActive'         => $this->isPerfectBrandsActive(),
+					'isWooCommerceBrandsActive'     => $this->isWooCommerceBrandsActive(),
+					'isWooCommerceUpcEanIsbnActive' => $this->isWooCommerceUpcEanIsbnActive()
 				];
 			}
 

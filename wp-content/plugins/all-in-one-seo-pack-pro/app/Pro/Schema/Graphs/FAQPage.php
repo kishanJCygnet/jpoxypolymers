@@ -15,24 +15,25 @@ use AIOSEO\Plugin\Common\Schema\Graphs as CommonGraphs;
  */
 class FAQPage {
 	/**
-	 * Returns the graph data.
+	 * Returns the subgraph(s)' data.
+	 * We only return the subgraphs since all FAQ pages need to be grouped under a single main entity.
+	 * We'll group them later on right before we return the schema as JSON.
 	 *
 	 * @since 4.0.13
 	 *
-	 * @param  Object $graphData      The graph data.
-	 * @param  Object $blockGraphData The block data.
-	 * @return array                  The parsed graph data.
+	 * @param  Object $graphData The graph data.
+	 * @param  bool   $isBlock   Whether the graph data is coming from a block.
+	 * @return array             The parsed graph data.
 	 */
-	public function get( $graphData = null, $blockGraphData = null ) {
-		if ( ! empty( $blockGraphData ) ) {
-			// If we're dealing with a block graph, return data as subgraph without the mainEntity parent since we'll do that later.
-			if ( ! empty( $blockGraphData->question ) && ! empty( $blockGraphData->answer ) ) {
+	public function get( $graphData = null, $isBlock = false ) {
+		if ( $isBlock ) {
+			if ( ! empty( $graphData->question ) && ! empty( $graphData->answer ) ) {
 				return [
 					'@type'          => 'Question',
-					'name'           => $blockGraphData->question,
+					'name'           => $graphData->question,
 					'acceptedAnswer' => [
 						'@type' => 'Answer',
-						'text'  => $blockGraphData->answer
+						'text'  => $graphData->answer
 					]
 				];
 			}
@@ -40,31 +41,25 @@ class FAQPage {
 			return [];
 		}
 
-		$subGraphs = [];
-		if ( empty( $graphData->properties->questions ) ) {
-			return [];
-		}
+		$faqPages = [];
+		if ( ! empty( $graphData->properties->questions ) ) {
+			foreach ( $graphData->properties->questions as $data ) {
+				if ( empty( $data->question ) || empty( $data->answer ) ) {
+					continue;
+				}
 
-		foreach ( $graphData->properties->questions as $questionData ) {
-			if ( empty( $questionData->question ) || empty( $questionData->answer ) ) {
-				continue;
+				$faqPages[] = [
+					'@type'          => 'Question',
+					'name'           => $data->question,
+					'acceptedAnswer' => [
+						'@type' => 'Answer',
+						'text'  => $data->answer
+					]
+				];
 			}
-
-			$subGraphs[] = [
-				'@type'          => 'Question',
-				'name'           => $questionData->question,
-				'acceptedAnswer' => [
-					'@type' => 'Answer',
-					'text'  => $questionData->answer
-				]
-			];
 		}
 
-		if ( empty( $subGraphs ) ) {
-			return [];
-		}
-
-		return $this->getMainGraph( $subGraphs, $graphData );
+		return $faqPages;
 	}
 
 	/**
@@ -73,7 +68,7 @@ class FAQPage {
 	 * @since 4.2.3
 	 *
 	 * @param  array  $subGraphs The subgraphs.
-	 * @param  Object $graphData The graph data.
+	 * @param  Object $graphData The graph data (optional).
 	 * @return array             The main graph data.
 	 */
 	public function getMainGraph( $subGraphs = [], $graphData = null ) {

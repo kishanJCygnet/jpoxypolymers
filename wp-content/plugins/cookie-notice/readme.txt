@@ -3,8 +3,8 @@ Contributors: humanityco
 Tags: gdpr, ccpa, cookies, consent, compliance
 Requires at least: 4.7
 Requires PHP: 5.4
-Tested up to: 6.0.2
-Stable tag: 2.4.1
+Tested up to: 6.1.1
+Stable tag: 2.4.4
 License: MIT License
 License URI: http://opensource.org/licenses/MIT
 
@@ -120,6 +120,17 @@ Yes! The plugin + web appliaction version includes technical compliance features
 4. Cookie Compliance settings
 
 == Changelog ==
+
+= 2.4.4 =
+* Fix: Undefined index: status and subscription
+
+= 2.4.3 =
+* Fix: Deprecated preg_replace() notice in PHP 8.1
+
+= 2.4.2 =
+* New: Compatibility with Autoptimize plugin
+* Fix: Improved Contact Form 7 reCaptcha support
+* Fix: Fixed non-static method cookies_set()
 
 = 2.4.1 =
 * New: Contact Form 7 reCaptcha support
@@ -433,7 +444,5 @@ Initial release
 
 == Upgrade Notice ==
 
-= 2.4.1 =
-* New: Contact Form 7 reCaptcha support
-* Tweak: Switched health status from critical to recommended when Cookie Compliance is not integrated
-* Tweak: Add SimeSite=Lax for created cookies
+= 2.4.4 =
+* Fix: Undefined index: status and subscription

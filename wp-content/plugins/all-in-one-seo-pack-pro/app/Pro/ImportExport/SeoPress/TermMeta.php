@@ -24,7 +24,7 @@ class TermMeta {
 	 * @return void
 	 */
 	public function scheduleImport() {
-		if ( aioseo()->helpers->scheduleSingleAction( aioseo()->importExport->seoPress->termActionName, 0 ) ) {
+		if ( aioseo()->actionScheduler->scheduleSingle( aioseo()->importExport->seoPress->termActionName, 0 ) ) {
 			if ( ! aioseo()->core->cache->get( 'import_term_meta_seopress' ) ) {
 				aioseo()->core->cache->update( 'import_term_meta_seopress', time(), WEEK_IN_SECONDS );
 			}
@@ -138,7 +138,7 @@ class TermMeta {
 		}
 
 		if ( count( $terms ) === $termsPerAction ) {
-			aioseo()->helpers->scheduleSingleAction( aioseo()->importExport->seoPress->termActionName, 5, [], true );
+			aioseo()->actionScheduler->scheduleSingle( aioseo()->importExport->seoPress->termActionName, 5, [], true );
 		} else {
 			aioseo()->core->cache->delete( 'import_term_meta_seopress' );
 		}

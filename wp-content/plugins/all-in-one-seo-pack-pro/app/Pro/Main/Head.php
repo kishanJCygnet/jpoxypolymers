@@ -24,8 +24,9 @@ class Head extends CommonMain\Head {
 		parent::__construct();
 
 		$this->analytics = new GoogleAnalytics();
-		$this->included  = new Meta\Included();
 		$this->keywords  = new Meta\Keywords();
+
+		new Meta\Included();
 
 		add_action( 'init', [ $this, 'addAnalytics' ] );
 	}

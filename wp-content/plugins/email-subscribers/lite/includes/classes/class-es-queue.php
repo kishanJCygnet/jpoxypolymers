@@ -148,7 +148,7 @@ if ( ! class_exists( 'ES_Queue' ) ) {
 
 								$post_ids = array();
 								if ( class_exists( 'ES_Post_Digest' ) ) {
-									$post_ids = ES_Post_Digest::get_post_id_for_post_digest( $campaign_id );
+									$post_ids = ES_Post_Digest::get_matching_post_ids( $campaign_id );
 								}
 
 								// Proceed only if we have posts for digest.

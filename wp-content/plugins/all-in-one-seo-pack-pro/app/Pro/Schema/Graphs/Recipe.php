@@ -25,9 +25,9 @@ class Recipe extends CommonGraphs\Graph {
 	public function get( $graphData = null ) {
 		$data = [
 			'@type'              => 'Recipe',
-			'@id'                => ! empty( $graphData->properties->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#recipe',
+			'@id'                => ! empty( $graphData->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#recipe',
 			'name'               => ! empty( $graphData->properties->name ) ? $graphData->properties->name : get_the_title(),
-			'description'        => ! empty( $graphData->properties->description ) ? $graphData->properties->description : aioseo()->schema->context['description'],
+			'description'        => ! empty( $graphData->properties->description ) ? $graphData->properties->description : '',
 			'author'             => [
 				'@type' => 'Person',
 				'name'  => ! empty( $graphData->properties->author ) ? $graphData->properties->author : get_the_author_meta( 'display_name' )

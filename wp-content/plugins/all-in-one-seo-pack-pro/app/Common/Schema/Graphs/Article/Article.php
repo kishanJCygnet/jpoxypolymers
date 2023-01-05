@@ -33,7 +33,7 @@ class Article extends Graphs\Graph {
 			'@id'              => ! empty( $graphData->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#article',
 			'name'             => ! empty( $graphData->properties->name ) ? $graphData->properties->name : aioseo()->schema->context['name'],
 			'headline'         => ! empty( $graphData->properties->headline ) ? $graphData->properties->headline : get_the_title(),
-			'description'      => ! empty( $graphData->properties->description ) ? $graphData->properties->description : aioseo()->schema->context['description'],
+			'description'      => ! empty( $graphData->properties->description ) ? $graphData->properties->description : '',
 			'author'           => [
 				'@type' => 'Person',
 				'name'  => ! empty( $graphData->properties->author->name ) ? $graphData->properties->author->name : get_the_author_meta( 'display_name' ),
@@ -46,7 +46,7 @@ class Article extends Graphs\Graph {
 				: mysql2date( DATE_W3C, $post->post_date_gmt, false ),
 			'dateModified'     => ! empty( $graphData->properties->dates->dateModified )
 				? mysql2date( DATE_W3C, $graphData->properties->dates->dateModified, false )
-				: mysql2date( DATE_W3C, $post->post_date_gmt, false ),
+				: mysql2date( DATE_W3C, $post->post_modified_gmt, false ),
 			'inLanguage'       => aioseo()->helpers->currentLanguageCodeBCP47(),
 			'commentCount'     => get_comment_count( $post->ID )['approved'],
 			'mainEntityOfPage' => empty( $graphData ) ? [ '@id' => aioseo()->schema->context['url'] . '#webpage' ] : '',

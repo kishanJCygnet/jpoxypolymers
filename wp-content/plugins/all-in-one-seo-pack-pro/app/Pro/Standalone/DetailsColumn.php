@@ -128,7 +128,7 @@ class DetailsColumn extends CommonDetailsColumn {
 		wp_localize_script( 'aioseo/js/' . $this->scriptSlug, 'aioseo', $data );
 
 		ob_start();
-		require( AIOSEO_DIR . '/app/Common/Views/admin/terms/columns.php' );
+		require AIOSEO_DIR . '/app/Common/Views/admin/terms/columns.php';
 		$out = ob_get_clean();
 
 		return $out;

@@ -29,9 +29,9 @@ class Event extends CommonGraphs\Graph {
 
 		$data = [
 			'@type'               => ! empty( $graphData->properties->eventType ) ? $graphData->properties->eventType : 'Event',
-			'@id'                 => ! empty( $graphData->properties->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#event',
+			'@id'                 => ! empty( $graphData->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#event',
 			'name'                => ! empty( $graphData->properties->name ) ? $graphData->properties->name : get_the_title(),
-			'description'         => ! empty( $graphData->properties->description ) ? $graphData->properties->description : aioseo()->schema->context['description'],
+			'description'         => ! empty( $graphData->properties->description ) ? $graphData->properties->description : '',
 			'eventStatus'         => ! empty( $graphData->properties->status ) ? 'https://schema.org/' . $graphData->properties->status : 'https://schema.org/EventScheduled',
 			'eventAttendanceMode' => ! empty( $graphData->properties->attendanceMode ) ? 'https://schema.org/' . $graphData->properties->attendanceMode : 'https://schema.org/OfflineEventAttendanceMode', // phpcs:ignore Generic.Files.LineLength.MaxExceeded
 			'startDate'           => ! empty( $graphData->properties->dates->startDate ) ? mysql2date( DATE_W3C, $graphData->properties->dates->startDate, false ) : '',
@@ -62,7 +62,7 @@ class Event extends CommonGraphs\Graph {
 			$data['offers'] = [
 				'@type'         => 'Offer',
 				'url'           => ! empty( $graphData->properties->offer->url ) ? $graphData->properties->offer->url : '',
-				'price'         => ! empty( $graphData->properties->offer->price ) ? $graphData->properties->offer->price : 0,
+				'price'         => ! empty( $graphData->properties->offer->price ) ? (float) $graphData->properties->offer->price : 0,
 				'priceCurrency' => ! empty( $graphData->properties->offer->currency ) ? $graphData->properties->offer->currency : '',
 				'validFrom'     => ! empty( $graphData->properties->offer->validFrom )
 					? aioseo()->helpers->dateToIso8601( $graphData->properties->offer->validFrom )

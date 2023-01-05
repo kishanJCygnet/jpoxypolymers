@@ -18,15 +18,6 @@ namespace Nilambar\Optioner;
 class Optioner {
 
 	/**
-	 * Version.
-	 *
-	 * @since 1.0.8
-	 *
-	 * @var array
-	 */
-	protected $version = '1.0.9';
-
-	/**
 	 * Options.
 	 *
 	 * @since 1.0.0
@@ -63,7 +54,7 @@ class Optioner {
 	protected $tabs = array();
 
 	/**
-	 * Tab status
+	 * Tab status.
 	 *
 	 * @since 1.0.0
 	 *
@@ -90,6 +81,15 @@ class Optioner {
 	protected $page = array();
 
 	/**
+	 * Quick links.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @var array
+	 */
+	protected $quick_links = array();
+
+	/**
 	 * Sidebar status.
 	 *
 	 * @since 1.0.0
@@ -97,6 +97,15 @@ class Optioner {
 	 * @var bool
 	 */
 	protected $is_sidebar = false;
+
+	/**
+	 * Sidebar sticky status.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @var bool
+	 */
+	protected $is_sidebar_sticky = false;
 
 	/**
 	 * Sidebar width.
@@ -159,9 +168,6 @@ class Optioner {
 
 		// Register settings.
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
-
-		// Enqueue assets.
-		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 	}
 
 	/**
@@ -199,19 +205,42 @@ class Optioner {
 	public function render_page() {
 		echo '<div class="wrap optioner-wrap" id="optioner-wrapper">';
 
+		echo '<div class="optioner-header">';
 		echo '<h1>' . esc_html( get_admin_page_title() ) . '</h1>';
+
+		$current_screen = get_current_screen();
+
+		if ( ! ( $current_screen && 'options-general' === $current_screen->parent_base ) ) {
+			settings_errors();
+		}
+
+		if ( ! empty( $this->page['page_subtitle'] ) ) {
+			echo '<p>' . esc_html( $this->page['page_subtitle'] ) . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		}
+
+		$this->render_quick_links();
+
+		echo '</div><!-- .optioner-header -->';
 
 		$tab_status_class = ( true === $this->tab_status ) ? 'tab-enabled' : 'tab-disabled';
 
-		echo '<div class="wrap-content ' . esc_attr( $tab_status_class ) . '">';
+		$sticky_sidebar_class = ( true === $this->is_sidebar_sticky ) ? 'sticky-sidebar' : '';
+
+		echo '<div class="wrap-content ' . esc_attr( $tab_status_class . ' ' . $sticky_sidebar_class ) . '">';
 
 		echo '<div class="wrap-primary">';
+
+		echo '<div class="optioner-form-nav-wrap">';
 
 		if ( true === $this->tab_status ) {
 			$this->render_navigation();
 		}
 
 		$this->render_forms();
+
+		echo '</div><!-- .optioner-form-nav-wrap -->';
+
+		do_action( 'optioner_after_form', $this, $this->page );
 
 		echo '</div><!-- .wrap-primary -->';
 
@@ -221,7 +250,7 @@ class Optioner {
 			echo '<div class="wrap-secondary" style="' . esc_attr( $sidebar_styles ) . '">';
 
 			if ( is_callable( $this->sidebar_callback ) ) {
-				call_user_func( $this->sidebar_callback );
+				call_user_func( $this->sidebar_callback, $this );
 			}
 
 			echo '</div><!-- .wrap-secondary -->';
@@ -238,13 +267,13 @@ class Optioner {
 	 * @since 1.0.0
 	 */
 	public function render_navigation() {
-		$html = '<h2 class="nav-tab-wrapper">';
+		$html = '<div class="optioner-tabs-nav">';
 
 		foreach ( $this->tabs as $tab ) {
-			$html .= sprintf( '<a href="#%1$s" class="nav-tab" id="%1$s-tab">%2$s</a>', $tab['id'], $tab['title'] );
+			$html .= sprintf( '<h3><a href="#%1$s" class="tab-nav" id="%1$s-tab">%2$s</a></h3>', $tab['id'], $tab['title'] );
 		}
 
-		$html .= '</h2>';
+		$html .= '</div>';
 
 		echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
@@ -306,16 +335,19 @@ class Optioner {
 			if ( isset( $this->fields[ $tab['id'] ] ) && ! empty( $this->fields[ $tab['id'] ] ) ) {
 				foreach ( $this->fields[ $tab['id'] ] as $field_key => $field ) {
 					$args = array(
-						'field'       => $field,
-						'field_id'    => $field['id'],
-						'field_name'  => $this->page['option_slug'] . '[' . $field['id'] . ']',
-						'field_value' => ( isset( $this->options[ $field['id'] ] ) ) ? $this->options[ $field['id'] ] : '',
+						'field'          => $field,
+						'field_id'       => $field['id'],
+						'field_name'     => $this->page['option_slug'] . '[' . $field['id'] . ']',
+						'field_clean_id' => $this->page['option_slug'] . '---' . $field['id'],
+						'field_value'    => ( isset( $this->options[ $field['id'] ] ) ) ? $this->options[ $field['id'] ] : '',
+						'class'          => 'field-row-' . $field['type'],
+						'label_for'      => $this->page['option_slug'] . '---' . $field['id'],
 					);
 
 					add_settings_field(
 						$field_key,
-						$field['title'],
-						array( $this, 'callback_' . $field['type'] ),
+						isset( $field['title'] ) ? $field['title'] : '',
+						is_callable( array( $this, 'callback_' . $field['type'] ) ) ? array( $this, 'callback_' . $field['type'] ) : array( $this, 'callback_text' ),
 						$tab['id'] . '-' . $this->page['menu_slug'],
 						$tab['id'] . '_settings-' . $this->page['menu_slug'],
 						$args
@@ -374,7 +406,12 @@ class Optioner {
 								$output[ $field['id'] ] = wp_kses_post( $input[ $field['id'] ] );
 								break;
 
+							case 'code':
+								$output[ $field['id'] ] = $input[ $field['id'] ];
+								break;
+
 							case 'checkbox':
+							case 'toggle':
 								$output[ $field['id'] ] = $input[ $field['id'] ] ? true : false;
 								break;
 
@@ -415,11 +452,97 @@ class Optioner {
 	 * @param array  $args Arguments.
 	 */
 	public function render_field_markup( $html, $args ) {
-		$html = sprintf( '<div class="form-field-%1$s form-field-%2$s">%3$s</div>', $args['field']['type'], $args['field']['id'], $html );
+		$is_conditional_active = false;
+
+		if ( isset( $args['field']['condition'] ) ) {
+			$is_conditional_active = true;
+		}
+
+		$conditional_class = ( $is_conditional_active ) ? 'conditional' : '';
+
+		$conditionals = '';
+
+		if ( $is_conditional_active ) {
+			$conditionals = $this->get_conditionals( $args );
+		}
+
+		$html = sprintf( '<div class="%5$s form-field-%1$s form-field-%2$s" data-condition="%4$s">%3$s</div>', $args['field']['type'], $args['field']['id'], $html, $conditionals, $conditional_class );
 
 		do_action( 'optioner_field_top_' . $args['field']['type'], $args['field']['id'], $this->page['menu_slug'], $args );
 		echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		do_action( 'optioner_field_bottom_' . $args['field']['type'], $args['field']['id'], $this->page['menu_slug'], $args );
+	}
+
+	/**
+	 * Return field conditionals.
+	 *
+	 * @since  1.0.0
+	 *
+	 * @param array $args Field arguments.
+	 * @return string Conditionals string.
+	 */
+	private function get_conditionals( $args ) {
+		$output = '';
+
+		$rules = array();
+
+		$conditions = $args['field']['condition'];
+
+		foreach ( $conditions as $cond ) {
+			$parent_field = $this->get_field_by_id( $cond['key'] );
+
+			if ( empty( $parent_field ) ) {
+				continue;
+			}
+
+			if ( 'checkbox' === $parent_field['type'] || 'toggle' === $parent_field['type'] ) {
+				$rule = '#' . $this->page['option_slug'] . '---' . $cond['key'];
+
+				// Reverse conditions.
+				if ( isset( $cond['compare'] ) && '!==' === $cond['compare'] ) {
+					$rule = '!' . $rule;
+				}
+			} else {
+				$rule = $this->page['option_slug'] . '[' . $cond['key'] . ']';
+
+				if ( isset( $cond['compare'] ) ) {
+					$rule .= ' ' . $cond['compare'] . ' \'' . $cond['value'] . '\'';
+				}
+			}
+
+			$rules[] = $rule;
+		}
+
+		if ( ! empty( $rules ) ) {
+			$output = join( ' && ', $rules );
+		}
+
+		return $output;
+	}
+
+	/**
+	 * Return field details by field ID.
+	 *
+	 * @since  1.0.0
+	 *
+	 * @param string $id Field ID.
+	 * @return array Field details.
+	 */
+	private function get_field_by_id( $id ) {
+		$output = array();
+
+		foreach ( $this->fields as $section_key => $section ) {
+
+			foreach ( $section as $field_key => $field ) {
+
+				if ( $id === $field_key ) {
+					$output = $field;
+					break;
+				}
+			}
+		}
+
+		return $output;
 	}
 
 	/**
@@ -433,6 +556,7 @@ class Optioner {
 		$attr = array(
 			'type'  => $args['field']['type'],
 			'name'  => $args['field_name'],
+			'id'    => $args['field_clean_id'],
 			'value' => $this->get_value( $args ),
 			'class' => isset( $args['field']['class'] ) ? $args['field']['class'] : 'regular-text',
 		);
@@ -506,6 +630,7 @@ class Optioner {
 			'type'  => 'checkbox',
 			'name'  => $args['field_name'],
 			'value' => 1,
+			'id'    => $args['field_clean_id'],
 		);
 
 		$attributes = $this->render_attr( $attr, false );
@@ -515,6 +640,44 @@ class Optioner {
 		$html .= '<input type="hidden" name="' . esc_attr( $args['field_name'] ) . '" value="0" />';
 
 		$html .= sprintf( '<input %s %s />', $attributes, checked( $this->get_value( $args ), 1, false ) );
+
+		if ( isset( $args['field']['side_text'] ) && ! empty( $args['field']['side_text'] ) ) {
+			$html .= esc_html( $args['field']['side_text'] );
+		}
+
+		$html .= $this->get_field_description( $args );
+
+		$this->render_field_markup( $html, $args );
+	}
+
+	/**
+	 * Render toggle.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $args Arguments.
+	 */
+	public function callback_toggle( $args ) {
+		$attr = array(
+			'type'  => 'checkbox',
+			'name'  => $args['field_name'],
+			'value' => 1,
+			'id'    => $args['field_clean_id'],
+		);
+
+		$attributes = $this->render_attr( $attr, false );
+
+		$html = '';
+
+		$html .= '<input type="hidden" name="' . esc_attr( $args['field_name'] ) . '" value="0" />';
+
+		$html .= '<label class="toggle">';
+
+		$html .= sprintf( '<input %s %s />', $attributes, checked( $this->get_value( $args ), 1, false ) );
+
+		$html .= '<span class="slider"></span>';
+
+		$html .= '</label>';
 
 		if ( isset( $args['field']['side_text'] ) && ! empty( $args['field']['side_text'] ) ) {
 			$html .= esc_html( $args['field']['side_text'] );
@@ -576,6 +739,7 @@ class Optioner {
 	public function callback_textarea( $args ) {
 		$attr = array(
 			'name'  => $args['field_name'],
+			'id'    => $args['field_clean_id'],
 			'class' => isset( $args['field']['class'] ) ? $args['field']['class'] : 'regular-text',
 			'rows'  => isset( $args['field']['rows'] ) ? $args['field']['rows'] : 5,
 		);
@@ -583,6 +747,37 @@ class Optioner {
 		if ( isset( $args['field']['placeholder'] ) ) {
 			$attr['placeholder'] = $args['field']['placeholder'];
 		}
+
+		$attributes = $this->render_attr( $attr, false );
+
+		$html = sprintf( '<textarea %s>%s</textarea>', $attributes, esc_textarea( $this->get_value( $args ) ) );
+
+		$html .= $this->get_field_description( $args );
+
+		$this->render_field_markup( $html, $args );
+	}
+
+	/**
+	 * Render code editor.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $args Arguments.
+	 */
+	public function callback_code( $args ) {
+		$attr = array(
+			'name'      => $args['field_name'],
+			'id'        => $args['field_clean_id'],
+			'class'     => isset( $args['field']['class'] ) ? $args['field']['class'] : '',
+			'rows'      => isset( $args['field']['rows'] ) ? $args['field']['rows'] : 5,
+			'data-mime' => isset( $args['field']['mime_type'] ) ? $args['field']['mime_type'] : 'css',
+		);
+
+		if ( isset( $args['field']['placeholder'] ) ) {
+			$attr['placeholder'] = $args['field']['placeholder'];
+		}
+
+		$attr['class'] .= ' code-editor';
 
 		$attributes = $this->render_attr( $attr, false );
 
@@ -644,18 +839,11 @@ class Optioner {
 		ob_start();
 		?>
 		<div class="field-image">
-			<input type="button"
-				class="select-img button button-primary"
-				value="<?php esc_attr_e( 'Upload', 'optioner' ); ?>"
-				data-uploader_title="<?php esc_attr_e( 'Select Image', 'optioner' ); ?>"
-				data-uploader_button_text="<?php esc_attr_e( 'Choose Image', 'optioner' ); ?>"
-				/>
-			<input type="button" value="<?php echo esc_attr( _x( 'X', 'remove button', 'optioner' ) ); ?>" class="button button-secondary js-remove-image <?php echo ( ! empty( $value ) ) ? 'show' : 'hide'; ?>" />
-			<input type="hidden" class="img" name="<?php echo esc_attr( $args['field_name'] ); ?>" value="<?php echo esc_attr( $value ); ?>" />
-			<div class="image-preview-wrap">
-				<?php if ( ! empty( $value ) ) : ?>
-					<img src="<?php echo esc_attr( $value ); ?>" alt="" />
-				<?php endif; ?>
+			<input type="text" class="field-input regular-text" name="<?php echo esc_attr( $args['field_name'] ); ?>" id="<?php echo esc_attr( $args['field_clean_id'] ); ?>" value="<?php echo esc_attr( $value ); ?>" />
+			<a href="javascript:void(0);" class="js-upload-image optioner-button" data-uploader_title="<?php esc_attr_e( 'Select Image', 'optioner' ); ?>" data-uploader_button_text="<?php esc_attr_e( 'Choose Image', 'optioner' ); ?>"><span class="dashicons dashicons-upload"></span></a>
+			<a href="javascript:void(0);" class="optioner-button optioner-button-danger js-remove-image <?php echo ( empty( $value ) ) ? 'hide' : ''; ?>"><span class="dashicons dashicons-no"></span></a>
+			<div class="preview-wrap <?php echo ( ! empty( $value ) ? 'preview-on' : '' ); ?>">
+				<img class="field-preview" src="<?php echo esc_attr( $value ); ?>" alt="" draggable="false" />
 			</div>
 		</div>
 
@@ -678,6 +866,7 @@ class Optioner {
 		$attr = array(
 			'type'  => 'text',
 			'name'  => $args['field_name'],
+			'id'    => $args['field_clean_id'],
 			'value' => $this->get_value( $args ),
 			'class' => isset( $args['field']['class'] ) ? $args['field']['class'] : 'regular-text',
 		);
@@ -718,6 +907,25 @@ class Optioner {
 		$this->render_field_markup( $html, $args );
 	}
 
+	/**
+	 * Render message.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $args Arguments.
+	 */
+	public function callback_message( $args ) {
+		$attr = array(
+			'class' => isset( $args['field']['class'] ) ? $args['field']['class'] : '',
+		);
+
+		$attributes = $this->render_attr( $attr, false );
+
+		$html = sprintf( '<div %s>%s</div>', $attributes, wp_kses_post( $args['field']['description'] ) );
+
+		$this->render_field_markup( $html, $args );
+	}
+
 
 	/**
 	 * Render select.
@@ -729,7 +937,12 @@ class Optioner {
 	public function callback_select( $args ) {
 		$attr = array(
 			'name' => $args['field_name'],
+			'id'   => $args['field_clean_id'],
 		);
+
+		if ( isset( $args['field']['stylish'] ) && true === $args['field']['stylish'] ) {
+			$attr['class'] = ' optioner-stylish-select';
+		}
 
 		$attributes = $this->render_attr( $attr, false );
 
@@ -832,7 +1045,9 @@ class Optioner {
 		if ( isset( $this->options[ $args['field_id'] ] ) ) {
 			$output = $this->options[ $args['field_id'] ];
 		} else {
-			$output = $default;
+			if ( 'multicheck' !== $args['field']['type'] ) {
+				$output = $default;
+			}
 		}
 
 		return $output;
@@ -857,15 +1072,43 @@ class Optioner {
 	 */
 	public function set_page( $args = array() ) {
 		$defaults = array(
-			'page_title'  => esc_html__( 'Optioner', 'optioner' ),
-			'menu_title'  => esc_html__( 'Optioner', 'optioner' ),
-			'capability'  => 'manage_options',
-			'menu_slug'   => 'optioner',
-			'option_slug' => 'optioner',
-			'menu_icon'   => 'dashicons-admin-generic',
+			'page_title'    => esc_html__( 'Optioner', 'optioner' ),
+			'menu_title'    => esc_html__( 'Optioner', 'optioner' ),
+			'capability'    => 'manage_options',
+			'menu_slug'     => 'optioner',
+			'option_slug'   => 'optioner',
+			'menu_icon'     => 'dashicons-admin-generic',
+			'page_subtitle' => '',
 		);
 
 		$this->page = wp_parse_args( $args, $defaults );
+	}
+
+	/**
+	 * Set quick links.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $links Quick links array.
+	 */
+	public function set_quick_links( $links ) {
+		$output = array();
+
+		if ( empty( $links ) ) {
+			return $output;
+		}
+
+		foreach ( $links as $link ) {
+			$defaults = array(
+				'text' => esc_html__( 'Link', 'wp-welcome' ),
+				'url'  => '#',
+				'type' => 'primary',
+			);
+
+			$output[] = wp_parse_args( $link, $defaults );
+		}
+
+		$this->quick_links = $output;
 	}
 
 	/**
@@ -880,15 +1123,18 @@ class Optioner {
 
 		$defaults = array(
 			'render_callback' => '',
-			'width'           => 20,
+			'width'           => 25,
+			'sticky'          => false,
 		);
 
 		$args = wp_parse_args( $args, $defaults );
 
+		$this->is_sidebar_sticky = $args['sticky'];
+
 		if ( absint( $args['width'] ) > 0 && absint( $args['width'] ) < 100 ) {
 			$this->sidebar_width = absint( $args['width'] );
 		} else {
-			$this->sidebar_width = 20;
+			$this->sidebar_width = 25;
 		}
 
 		if ( is_callable( $args['render_callback'] ) ) {
@@ -963,7 +1209,6 @@ class Optioner {
 		$html = '';
 
 		foreach ( $attributes as $name => $value ) {
-
 			$esc_value = '';
 
 			if ( 'class' === $name && is_array( $value ) ) {
@@ -977,7 +1222,11 @@ class Optioner {
 				$esc_value = esc_attr( $value );
 			}
 
-			$html .= false !== $value ? sprintf( ' %s="%s"', esc_html( $name ), $esc_value ) : esc_html( " {$name}" );
+			if ( ! in_array( $name, array( 'class', 'id', 'title', 'style', 'name' ), true ) ) {
+				$html .= false !== $value ? sprintf( ' %s="%s"', esc_html( $name ), $esc_value ) : esc_html( " {$name}" );
+			} else {
+				$html .= $value ? sprintf( ' %s="%s"', esc_html( $name ), $esc_value ) : '';
+			}
 		}
 
 		if ( ! empty( $html ) && true === $echo ) {
@@ -985,56 +1234,6 @@ class Optioner {
 		} else {
 			return $html;
 		}
-	}
-
-	/**
-	 * Enqueue assets.
-	 *
-	 * @since 1.0.0
-	 */
-	public function enqueue_assets() {
-		$screen = get_current_screen();
-
-		$required_screen = $this->get_required_screen();
-
-		if ( $required_screen !== $screen->id ) {
-			return;
-		}
-
-		wp_enqueue_style( 'wp-color-picker' );
-		wp_enqueue_script( 'wp-color-picker' );
-
-		wp_enqueue_media();
-
-		$file_path = realpath( dirname( __FILE__ ) );
-
-		$file_path = str_replace( 'src', '', $file_path );
-
-		$script_full_path = $file_path . '/assets/js/script.js';
-		$style_full_path  = $file_path . '/assets/css/style.css';
-
-		$script_url = \Kirki\URL::get_from_path( $script_full_path );
-		$style_url  = \Kirki\URL::get_from_path( $style_full_path );
-
-		wp_enqueue_style( 'optioner-style', $style_url, array(), $this->version );
-
-		$custom_css = '';
-
-		if ( true === $this->tab_status ) {
-			$custom_css .= '.tab-content{display:none;}';
-		}
-
-		if ( ! empty( $custom_css ) ) {
-			wp_add_inline_style( 'optioner-style', $custom_css );
-		}
-
-		wp_enqueue_script( 'optioner-scripts', $script_url, array( 'jquery', 'wp-color-picker' ), $this->version, true );
-
-		$localized_array = array(
-			'storage_key' => $this->page['menu_slug'] . '-activetab',
-		);
-
-		wp_localize_script( 'optioner-scripts', 'OPTIONER_OBJ', $localized_array );
 	}
 
 	/**
@@ -1116,5 +1315,139 @@ class Optioner {
 		);
 
 		return $output;
+	}
+
+	/**
+	 * Render sidebar box.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array   $args Sidebar box arguments.
+	 * @param Welcome $object Instance of Welcome.
+	 */
+	public function render_sidebar_box( $args = array(), $object ) {
+		$defaults = array(
+			'class'           => '',
+			'title'           => esc_html__( 'Box Title', 'wp-welcome' ),
+			'icon'            => '',
+			'type'            => 'content',
+			'content'         => esc_html__( 'Box Content', 'wp-welcome' ),
+			'render_callback' => null,
+			'button_text'     => '',
+			'button_url'      => '#',
+			'button_class'    => '',
+			'button_new_tab'  => true,
+		);
+
+		$args = wp_parse_args( $args, $defaults );
+
+		$object->render_sidebar_box_content( $args, $object );
+	}
+
+	/**
+	 * Render sidebar box.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array   $args Sidebar box arguments.
+	 * @param Welcome $obj Instance of Welcome.
+	 */
+	public static function render_sidebar_box_content( $args, $obj ) {
+		$box_attrs = array(
+			'class' => array( 'optioner-box' ),
+		);
+
+		if ( ! empty( $args['class'] ) ) {
+			$box_attrs['class'][] = $args['class'];
+		}
+
+		echo '<div ' . $obj->render_attr( $box_attrs, false ) . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+
+		if ( $args['title'] ) {
+			echo '<h3>';
+
+			if ( ! empty( $args['icon'] ) ) {
+				echo '<span class="dashicons ' . esc_attr( $args['icon'] ) . '"></span>';
+			}
+
+			echo esc_html( $args['title'] );
+			echo '</h3>';
+		}
+
+		if ( 'content' === $args['type'] ) {
+			echo wp_kses_post( wpautop( $args['content'] ) );
+		}
+
+		if ( 'custom' === $args['type'] ) {
+			if ( is_callable( $args['render_callback'] ) ) {
+				call_user_func( $args['render_callback'], $obj );
+			}
+		}
+
+		if ( ! empty( $args['button_text'] ) && ! empty( $args['button_url'] ) ) {
+			$button_attrs = array(
+				'href' => $args['button_url'],
+			);
+
+			if ( ! empty( $args['button_class'] ) ) {
+				$button_attrs['class'] = $args['button_class'];
+			}
+
+			if ( true === $args['button_new_tab'] ) {
+				$button_attrs['target'] = '_blank';
+			}
+
+			echo '<a ' . $obj->render_attr( $button_attrs, false ) . '">' . esc_html( $args['button_text'] ) . '</a>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		}
+
+		echo '</div><!-- .optioner-box -->';
+	}
+
+	/**
+	 * Return stars markup.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string Stars markup.
+	 */
+	public function get_stars() {
+		$output = '<div class="optioner-stars">';
+
+		for ( $i = 0; $i < 5; $i++ ) {
+			$output .= '<span class="dashicons-before dashicons-star-filled"></span>';
+		}
+
+		$output .= '</div><!-- .optioner-stars -->';
+
+		return $output;
+	}
+
+	/**
+	 * Render quick links.
+	 *
+	 * @since 1.0.0
+	 */
+	protected function render_quick_links() {
+		$links = $this->quick_links;
+
+		if ( ! empty( $links ) ) {
+			echo '<div class="optioner-quick-links">';
+
+			foreach ( $links as $link ) {
+				$button_classes = '';
+
+				if ( isset( $link['type'] ) ) {
+					if ( 'primary' === $link['type'] ) {
+						$button_classes = 'button button-primary';
+					} elseif ( 'secondary' === $link['type'] ) {
+						$button_classes = 'button button-secondary';
+					}
+				}
+
+				echo '<a href="' . esc_url( $link['url'] ) . '" class="' . esc_attr( $button_classes ) . '" target="_blank">' . esc_html( $link['text'] ) . '</a>';
+			}
+
+			echo '</div><!-- .optioner-quick-links -->';
+		}
 	}
 }

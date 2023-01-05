@@ -496,7 +496,7 @@ if ( ! class_exists( 'ES_Campaign_Admin' ) ) {
 
 			$type       = isset( $campaign_data['type'] ) ? $campaign_data['type'] : 'campaign';
 			$subject    = isset( $campaign_data['subject'] ) ? $campaign_data['subject'] : '';
-			$test_email = ES_Common::fetch_admin_email();
+			$test_email = ES_Common::get_admin_email();
 			$trim_character_count = 30;
 
 			if ( !( strlen($subject) <= $trim_character_count ) ) {
@@ -762,7 +762,6 @@ if ( ! class_exists( 'ES_Campaign_Admin' ) ) {
 																	jQuery('#ig-es-dnd-add-merge-tag-button').click(function () {
 																		jQuery('#ig-es-dnd-merge-tags-wrapper #ig-es-dnd-tags-dropdown').toggle();
 																	});
-
 																	ig_es_add_dnd_rte_tags( '<?php echo esc_js( $campaign_type ); ?>' );
 															});
 														});
@@ -867,7 +866,6 @@ if ( ! class_exists( 'ES_Campaign_Admin' ) ) {
 										$editor_settings = array(
 											'attributes' => array(
 												'data-html-textarea-name'  => 'campaign_data[body]',
-												'data-is-in-campaign-flow' => 'yes',
 											),
 										);
 										( new ES_Drag_And_Drop_Editor() )->show_editor( $editor_settings );
@@ -1241,9 +1239,9 @@ if ( ! class_exists( 'ES_Campaign_Admin' ) ) {
 
 				$campaign_data['body'] = $campaign_body;
 
-				return $campaign_data;
 			}
-
+			
+			return $campaign_data;
 		}
 
 		/**
@@ -1506,7 +1504,7 @@ if ( ! class_exists( 'ES_Campaign_Admin' ) ) {
 				$ignore_last_run        = true;
 				$campaign_id 			= $campaign_data['id'];
 				$campaign_body 			= $campaign_data['body'];
-				$post_ids               = ES_Post_Digest::get_post_id_for_post_digest( $campaign_id, $ignore_stored_post_ids, $ignore_last_run );
+				$post_ids               = ES_Post_Digest::get_matching_post_ids( $campaign_id, $ignore_stored_post_ids, $ignore_last_run );
 				$campaign_body          = ES_Post_Digest::process_post_digest_template( $campaign_body, $post_ids );
 				$campaign_data['body']  = $campaign_body;
 			}
@@ -1582,7 +1580,7 @@ if ( ! class_exists( 'ES_Campaign_Admin' ) ) {
 				</p>
 				<!-- Start-IG-Code -->
 				<div id="post_digest" class="pt-2 pb-0">
-					<span style="font-size: 0.8em; margin-left: 0.3em; padding: 2px; background: #e66060; color: #fff; border-radius: 2px; ">Pro</span>&nbsp;
+					<span style="font-size: 0.8em; margin-left: 0.3em; padding: 2px; background: #e66060; color: #fff; border-radius: 2px; ">MAX</span>&nbsp;
 					<a href="https://www.icegram.com/send-post-digest-using-email-subscribers-plugin/?utm_source=es&amp;utm_medium=in_app&amp;utm_campaign=view_post_digest_post" target="_blank"><?php esc_html_e( 'Available Keywords', 'email-subscribers' ); ?></a> <?php esc_html_e( 'for Post Digest:', 'email-subscribers' ); ?>
 					<span class="ig-es-workflow-variable-outer inline-block px-2 py-2 mr-2 mb-2 text-xs font-bold bg-gray-100 hover:bg-gray-300 rounded-md ">{{subscriber.first_name | fallback:'there'}}</span>
 					<span class="ig-es-workflow-variable-outer inline-block px-2 py-2 mr-2 mb-2 text-xs font-bold bg-gray-100 hover:bg-gray-300 rounded-md ">{{subscriber.last_name}}</span>

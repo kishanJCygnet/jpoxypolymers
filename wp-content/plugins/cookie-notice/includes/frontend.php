@@ -20,6 +20,7 @@ class Cookie_Notice_Frontend {
 	 */
 	public function __construct() {
 		// actions
+		// add_action( 'plugins_loaded', [ $this, 'init_modules' ] );
 		add_action( 'init', [ $this, 'init' ] );
 	}
 
@@ -35,30 +36,36 @@ class Cookie_Notice_Frontend {
 		if ( isset( $_GET['hu_purge_cache'] ) )
 			$this->purge_cache();
 
+		// get main instance
+		$cn = Cookie_Notice();
+
 		// is it preview mode?
 		$this->preview_mode = isset( $_GET['cn_preview_mode'] );
 
 		// is it a bot?
-		$this->is_bot = Cookie_Notice()->bot_detect->is_crawler();
+		$this->is_bot = $cn->bot_detect->is_crawler();
 
 		// is user logged in and hiding the banner is enabled
-		$this->hide_banner = is_user_logged_in() && Cookie_Notice()->options['general']['hide_banner'] === true;
+		$this->hide_banner = is_user_logged_in() && $cn->options['general']['hide_banner'] === true;
 
 		global $pagenow;
 
 		// bail if in preview mode or it's a bot request
 		if ( ! $this->preview_mode && ! $this->is_bot && ! $this->hide_banner && ! ( is_admin() && $pagenow === 'widgets.php' && isset( $_GET['legacy-widget-preview'] ) ) ) {
 			// init cookie compliance
-			if ( Cookie_Notice()->get_status() === 'active' ) {
+			if ( $cn->get_status() === 'active' ) {
 				add_action( 'send_headers', [ $this, 'add_compliance_http_header' ] );
 				add_action( 'wp_head', [ $this, 'add_cookie_compliance' ], 0 );
 
-				// contact form 7 5.1+ recaptcha v3 compatibility
-				if ( class_exists( 'WPCF7' ) && class_exists( 'WPCF7_RECAPTCHA' ) && defined( 'WPCF7_VERSION' ) && version_compare( WPCF7_VERSION, '5.1', '>=' ) ) {
-					$service = WPCF7_RECAPTCHA::get_instance();
+				// autoptimize
+				if ( function_exists( 'autoptimize' ) )
+					include_once( COOKIE_NOTICE_PATH . 'includes/modules/autoptimize/autoptimize.php' );
 
-					if ( $service->is_active() )
-						add_action( 'wp_enqueue_scripts', [ $this, 'contact_form_7_recaptcha' ], 21 );
+				// is blocking active?
+				if ( $cn->options['general']['app_blocking'] ) {
+					// contact form 7 5.1+ recaptcha v3 compatibility
+					if ( class_exists( 'WPCF7' ) && class_exists( 'WPCF7_RECAPTCHA' ) && defined( 'WPCF7_VERSION' ) && version_compare( WPCF7_VERSION, '5.1', '>=' ) )
+						include_once( COOKIE_NOTICE_PATH . 'includes/modules/contact-form-7/contact-form-7.php' );
 				}
 			// init cookie notice
 			} else {
@@ -73,47 +80,6 @@ class Cookie_Notice_Frontend {
 				add_filter( 'body_class', [ $this, 'change_body_class' ] );
 			}
 		}
-	}
-
-	/**
-	 * Replace original recaptcha script from Contact Form 7.
-	 *
-	 * @return void
-	 */
-	public function contact_form_7_recaptcha() {
-		// deregister original script
-		wp_deregister_script( 'wpcf7-recaptcha' );
-
-		$service = WPCF7_RECAPTCHA::get_instance();
-
-		// register new script
-		wp_register_script(
-			'wpcf7-recaptcha',
-			COOKIE_NOTICE_URL . '/includes/modules/contact-form-7/recaptcha.js',
-			[
-				'google-recaptcha',
-				'wp-polyfill',
-			],
-			WPCF7_VERSION,
-			true
-		);
-
-		wp_enqueue_script( 'wpcf7-recaptcha' );
-
-		wp_localize_script(
-			'wpcf7-recaptcha',
-			'wpcf7_recaptcha',
-			[
-				'sitekey'	=> $service->get_sitekey(),
-				'actions'	=> apply_filters(
-					'wpcf7_recaptcha_actions',
-					[
-						'homepage'		=> 'homepage',
-						'contactform'	=> 'contactform'
-					]
-				)
-			]
-		);
 	}
 
 	/**
@@ -153,12 +119,28 @@ class Cookie_Notice_Frontend {
 			]
 		);
 
+		// debug mode
 		if ( $cn->options['general']['debug_mode'] )
 			$options['debugMode'] = true;
+		
+		// custom scripts?
+		if ( (bool) $cn->options['general']['app_blocking'] ) { // $options['blocking'] === true
+			if ( is_multisite() && $cn->is_network_admin() && $cn->is_plugin_network_active() && $cn->network_options['global_override'] )
+				$blocking = get_site_option( 'cookie_notice_app_blocking' );
+			else
+				$blocking = get_option( 'cookie_notice_app_blocking' );
+			
+			$providers = ! empty( $blocking[ 'providers'] ) && is_array( $blocking[ 'providers'] ) ? $this->get_custom_items( $blocking[ 'providers'] ) : [];
+			
+			$patterns = ! empty( $blocking[ 'patterns'] ) && is_array( $blocking[ 'patterns'] ) ? $this->get_custom_items( $blocking[ 'patterns' ] ) : [];
+			
+			$options['customProviders'] = ! empty( $providers ) ? $providers : [];
+			$options['customPatterns'] = ! empty( $patterns ) ? $patterns : [];
+		}
 
 		// message output
 		$output = '
-		<!-- Hu Banner -->
+		<!-- Cookie Compliance -->
 		<script type="text/javascript">
 			var huOptions = ' . json_encode( $options ) . ';
 		</script>
@@ -359,6 +341,47 @@ class Cookie_Notice_Frontend {
 			if ( ! empty( $scripts ) )
 				echo $scripts;
 		}
+	}
+	
+	/**
+	 * Get custom providers or patterns.
+	 * 
+	 * @param type $items
+	 * @return type
+	 */
+	public function get_custom_items( $items ) {
+		$result = [];
+		
+		if ( ! empty( $items ) && is_array( $items ) ) {
+			foreach ( $items as $index => $item ) {
+				if ( isset( $item->IsCustom ) && $item->IsCustom == true ) {
+					$sanitized_item = [];
+					
+					foreach ( $item as $key => $value ) {
+						$sanitized_item[$key] = $this->sanitize_field( $value, $key );
+					}
+					
+					$result[] = (object) $sanitized_item;
+				}
+			}
+		}
+		
+		return $result;
+	}
+	
+	private function sanitize_field( $value, $key ) {
+		$sanitized_value = $value;
+		
+		switch ( $key ) {
+			case 'CategoryID':
+				$sanitized_value = (int) $value;
+				break;
+			case 'IsCustom':
+				$sanitized_value = (bool) $value;
+				break;
+		}
+		
+		return $sanitized_value;
 	}
 
 	/**

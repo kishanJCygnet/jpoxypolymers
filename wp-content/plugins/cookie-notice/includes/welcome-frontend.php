@@ -96,7 +96,7 @@ class Cookie_Notice_Welcome_Frontend {
 		];
 
 		echo '
-		<!-- Hu Banner -->
+		<!-- Cookie Compliance -->
 		<script type="text/javascript">
 			var huOptions = ' . json_encode( $options ) . ';
 		</script>

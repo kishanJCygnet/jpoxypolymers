@@ -281,7 +281,7 @@ if ( ! class_exists( 'ES_Admin' ) ) {
 
 			$type       = isset( $template_data['type'] ) ? $template_data['type'] : 'campaign';
 			$subject    = isset( $template_data['subject'] ) ? $template_data['subject'] : '';
-			$test_email = ES_Common::fetch_admin_email();
+			$test_email = ES_Common::get_admin_email();
 			$trim_character_count = 30;
 
 			if ( !( strlen($subject) <= $trim_character_count ) ) {
@@ -463,7 +463,6 @@ if ( ! class_exists( 'ES_Admin' ) ) {
 																		ig_es_sync_dnd_editor_content('#campaign-dnd-editor-data');
 																	}
 																});
-																ig_es_add_dnd_rte_tags( '<?php echo esc_js( $template_type ); ?>' );
 															});
 														});
 													</script>
@@ -559,7 +558,6 @@ if ( ! class_exists( 'ES_Admin' ) ) {
 										$editor_settings = array(
 											'attributes' => array(
 												'data-html-textarea-name'  => 'data[body]',
-												'data-is-in-campaign-flow' => 'yes',
 											),
 										);
 										( new ES_Drag_And_Drop_Editor() )->show_editor( $editor_settings );
@@ -843,7 +841,7 @@ if ( ! class_exists( 'ES_Admin' ) ) {
 				$ignore_last_run        = true;
 				$template_id 			= $template_data['id'];
 				$template_body 			= $template_data['body'];
-				$post_ids               = ES_Post_Digest::get_post_id_for_post_digest( $template_id, $ignore_stored_post_ids, $ignore_last_run );
+				$post_ids               = ES_Post_Digest::get_matching_post_ids( $template_id, $ignore_stored_post_ids, $ignore_last_run );
 				$template_body          = ES_Post_Digest::process_post_digest_template( $template_body, $post_ids );
 				$template_data['body']  = $template_body;
 			}
@@ -917,64 +915,58 @@ if ( ! class_exists( 'ES_Admin' ) ) {
 					$template_subject       = ! empty( $template_data['subject'] ) ? $template_data['subject'] : '';
 					$template_attachment_id = ! empty( $template_data['template_attachment_id'] ) ? $template_data['template_attachment_id'] : '';
 					$template_status        = 'save' === $template_action ? 'publish' : 'draft';
-		
-					if ( ! empty( $template_subject) ) {
-		
-						$data = array(
-							'post_title'   => $template_subject,
-							'post_content' => $template_body,
-							'post_type'    => 'es_template',
-							'post_status'  => $template_status,
-						);
 
-						$action = '';
-						if ( empty( $template_id ) ) {
-							$template_id = wp_insert_post( $data );
-							$action      = 'added';
-						} else {
-							$data['ID']  = $template_id;
-							$template_id = wp_update_post( $data );
-							$action      = 'updated';
-						}
-		
-						$is_template_added = ! ( $template_id instanceof WP_Error );
-		
-						if ( $is_template_added ) {
+					$data = array(
+						'post_title'   => $template_subject,
+						'post_content' => $template_body,
+						'post_type'    => 'es_template',
+						'post_status'  => $template_status,
+					);
 
-							if ( ! empty( $template_attachment_id ) ) {
-								set_post_thumbnail( $template_id, $template_attachment_id );
-							}
-		
-							$editor_type = ! empty( $template_data['meta']['es_editor_type'] ) ? $template_data['meta']['es_editor_type'] : '';
-		
-							$is_dnd_editor = IG_ES_DRAG_AND_DROP_EDITOR === $editor_type;
-		
-							if ( $is_dnd_editor ) {
-								$dnd_editor_data = array();
-								if ( ! empty( $template_data['meta']['es_dnd_editor_data'] ) ) {
-									$dnd_editor_data = $template_data['meta']['es_dnd_editor_data'];
-									$dnd_editor_data = json_decode( $dnd_editor_data );
-									update_post_meta( $template_id, 'es_dnd_editor_data', $dnd_editor_data );
-								}
-							} else {
-								$custom_css = ! empty( $template_data['meta']['es_custom_css'] ) ? $template_data['meta']['es_custom_css'] : '';
-								update_post_meta( $template_id, 'es_custom_css', $custom_css );
-							}
-		
-							update_post_meta( $template_id, 'es_editor_type', $editor_type );
-							update_post_meta( $template_id, 'es_template_type', $template_type );
-						}
-		
-						if ( ! empty( $template_id ) ) {
-							$template_url = admin_url( 'admin.php?page=es_template&id=' . $template_id . '&action=' . $action );
-							wp_safe_redirect( $template_url );
-							exit();
-						} else {
-							$message = __( 'An error has occured. Please try again later', 'email-subscribers' );	
-							ES_Common::show_message( $message, 'error' );
-						}
+					$action = '';
+					if ( empty( $template_id ) ) {
+						$template_id = wp_insert_post( $data );
+						$action      = 'added';
 					} else {
-						$message = __( 'Please add a subject.', 'email-subscribers' );	
+						$data['ID']  = $template_id;
+						$template_id = wp_update_post( $data );
+						$action      = 'updated';
+					}
+	
+					$is_template_added = ! ( $template_id instanceof WP_Error );
+	
+					if ( $is_template_added ) {
+
+						if ( ! empty( $template_attachment_id ) ) {
+							set_post_thumbnail( $template_id, $template_attachment_id );
+						}
+	
+						$editor_type = ! empty( $template_data['meta']['es_editor_type'] ) ? $template_data['meta']['es_editor_type'] : '';
+	
+						$is_dnd_editor = IG_ES_DRAG_AND_DROP_EDITOR === $editor_type;
+	
+						if ( $is_dnd_editor ) {
+							$dnd_editor_data = array();
+							if ( ! empty( $template_data['meta']['es_dnd_editor_data'] ) ) {
+								$dnd_editor_data = $template_data['meta']['es_dnd_editor_data'];
+								$dnd_editor_data = json_decode( $dnd_editor_data );
+								update_post_meta( $template_id, 'es_dnd_editor_data', $dnd_editor_data );
+							}
+						} else {
+							$custom_css = ! empty( $template_data['meta']['es_custom_css'] ) ? $template_data['meta']['es_custom_css'] : '';
+							update_post_meta( $template_id, 'es_custom_css', $custom_css );
+						}
+	
+						update_post_meta( $template_id, 'es_editor_type', $editor_type );
+						update_post_meta( $template_id, 'es_template_type', $template_type );
+					}
+	
+					if ( ! empty( $template_id ) ) {
+						$template_url = admin_url( 'admin.php?page=es_template&id=' . $template_id . '&action=' . $action );
+						wp_safe_redirect( $template_url );
+						exit();
+					} else {
+						$message = __( 'An error has occured. Please try again later', 'email-subscribers' );	
 						ES_Common::show_message( $message, 'error' );
 					}
 				}

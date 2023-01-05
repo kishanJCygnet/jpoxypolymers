@@ -9,8 +9,8 @@ jQuery(document).ready(function ($) {
         
         var wordpressLocale = document.documentElement.lang;
         
-//        console.log(calendarDataDecodedAndParsed);        
-        
+        var calendarDateFormat = $('#calendar-data').attr('data-calendar-time-format');
+
         $('#calendar').fullCalendar({
             header: {
                 left: 'prev,next today',
@@ -22,7 +22,7 @@ jQuery(document).ready(function ($) {
             height: 'auto',
             locale: wordpressLocale.substr(0,2),
             timezone: 'local',
-            timeFormat: 'h(:mm)a',
+            timeFormat: calendarDateFormat,
             events: calendarDataDecodedAndParsed
 
         })       

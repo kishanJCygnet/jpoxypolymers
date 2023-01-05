@@ -399,7 +399,7 @@ class ES_Workflow_Admin_Edit {
 		add_meta_box( 'ig_es_workflow_trigger', __( 'Trigger', 'email-subscribers' ), array( __CLASS__, 'trigger_metabox' ), $page_prefix . '_page_es_workflows', 'normal', 'high' );
 		add_meta_box( 'ig_es_workflow_rules', __( 'Rules', 'email-subscribers' ), array( __CLASS__, 'rules_metabox' ), $page_prefix . '_page_es_workflows', 'normal', 'core' );
 		add_meta_box( 'ig_es_workflow_actions', __( 'Actions', 'email-subscribers' ), array( __CLASS__, 'actions_metabox' ), $page_prefix . '_page_es_workflows', 'normal', 'low' );
-		add_meta_box( 'ig_es_workflow_save', __( 'Save', 'email-subscribers' ), array( __CLASS__, 'save_metabox' ), $page_prefix . '_page_es_workflows', 'side', 'default' );
+		add_meta_box( 'ig_es_workflow_save', __( 'Save', 'email-subscribers' ), array( __CLASS__, 'save_metabox' ), $page_prefix . '_page_es_workflows', 'side', 'high' );
 		add_meta_box( 'ig_es_workflow_variables', __( 'Placeholders', 'email-subscribers' ), array( __CLASS__, 'variables_metabox' ), $page_prefix . '_page_es_workflows', 'side', 'default' );
 
 		if ( ES()->can_upsell_features( array( 'lite', 'trial' ) ) ) {
@@ -592,21 +592,7 @@ class ES_Workflow_Admin_Edit {
 			)
 		);
 	}
-
-	/**
-	 * Timing meta box
-	 *
-	 * @since 4.4.1
-	 */
-	public static function timing_metabox() {
-		ES_Workflow_Admin::get_view(
-			'meta-box-timing',
-			array(
-				'workflow' => self::$workflow,
-			)
-		);
-	}
-
+	
 	/**
 	 * Options meta box
 	 *
@@ -1062,13 +1048,13 @@ class ES_Workflow_Admin_Edit {
 			<h2 class="ig-es-workflow-gallery-item-title font-medium text-gray-600 tracking-wide text-base mb-2">
 			<?php
 				/* translators: 1. Email Subscriber name 3. Supported plugin name */
-				echo sprintf( esc_html__( 'Connect %1$s and %2$s', 'email-subscribers' ), '<strong>Email Subscribers</strong>', '<strong>' . esc_html( $supported_plugin_name ) . '</strong>' );
+				echo sprintf( esc_html__( 'Connect %1$s and %2$s', 'email-subscribers' ), '<strong>Icegram Express</strong>)', '<strong>' . esc_html( $supported_plugin_name ) . '</strong>' );
 			?>
 			</h2>
 			<p>
 				<?php
 					/* translators: 1. Plugin name */
-					echo sprintf( esc_html__( 'Automatically sync your %1$s users/members into %2$s\'s audience list through our workflow integrations.', 'email-subscribers' ), '<strong>' . esc_html( $supported_plugin_name ) . '</strong>', '<strong>Email Subscribers</strong>', '<strong>' );
+					echo sprintf( esc_html__( 'Automatically sync your %1$s users/members into %2$s\'s audience list through our workflow integrations.', 'email-subscribers' ), '<strong>' . esc_html( $supported_plugin_name ) . '</strong>', '<strong>Icegram Express</strong>)', '<strong>' );
 				?>
 				<br/>
 				<a href="<?php echo esc_url( $workflow_gallery_url ); ?>" class="ig-es-primary-button px-3 py-1 mt-2 align-middle">

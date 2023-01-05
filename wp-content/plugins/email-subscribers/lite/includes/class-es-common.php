@@ -37,7 +37,7 @@ class ES_Common {
 	 *
 	 * @since 5.3.18
 	 */
-	public static function fetch_admin_email() {
+	public static function get_admin_email() {
 		$admin_email     = get_option( 'ig_es_admin_emails', '' );
 		$all_admin_email = explode(',', $admin_email);
 
@@ -65,6 +65,49 @@ class ES_Common {
 		}
 
 		return $total_emails_sent;
+	}
+
+	/**
+	 * Process the email template and get variable fallbacks
+	 *
+	 * @param $template
+	 */
+	public static function get_template_fallbacks( $template ) {
+		preg_match_all( '/{{(.*?)}}/', $template, $matches );
+		$default_keywords = array();
+		if ( 1 < count( $matches ) ) {
+			$fallback_matches = $matches[1];
+			foreach ( $fallback_matches as $keyword ) {
+				if ( strstr( $keyword, '|' ) ) {
+					list( $variable_name, $variable_params ) = explode( '|', $keyword, 2 );
+				} else {
+					$variable_name   = $keyword;
+					$variable_params = '';
+				}
+				$variable_name = trim( $variable_name );
+				$variable      = new IG_ES_Workflow_Variable_Parser();
+				$parameters    = $variable->parse_parameters_from_string( trim( $variable_params ) );
+				if ( is_array( $parameters ) && ! empty( $parameters ) ) {
+					if ( isset( $parameters['fallback'] ) && ! empty( $parameters['fallback'] ) ) {
+						$replace_with_fallback = self::un_quote( $parameters['fallback'] );
+						$is_nested_variable    = strpos( $variable_name, '.' ); // Check if variable has dont(.) in its name
+						if ( $is_nested_variable ) {
+							$variable_parts = explode( '.', $variable_name );
+							$variable_type  = $variable_parts[0];
+							$variable_slug  = $variable_parts[1];
+							/**
+							 * For variables like subscribers.name, we need to pass the fallback data as nested array
+							 * $default_keywords['subscribers']['name'] = fallback_value
+							 **/ 
+							$default_keywords[ $variable_type ][ $variable_slug ] = $replace_with_fallback;
+						} else {
+							$default_keywords[ $variable_name ] = $replace_with_fallback;
+						}
+					}
+				}
+			}
+		}
+		return $default_keywords;
 	}
 
 
@@ -659,7 +702,7 @@ class ES_Common {
 		if ( ! is_array( $category_names ) ) {
 			$category_names = array();
 		}
-		$checked_selected = ! array_intersect( array( 'All', 'None' ), $category_names ) ? "checked='checked'" : '';
+		$checked_selected = in_array( 'selected_cat', $category_names, true ) ? "checked='checked'" : '';
 		$category_html    = '<tr><td style="padding-top:4px;padding-bottom:4px;padding-right:10px;" ><span class="block pr-4 text-sm font-normal text-gray-600 pb-1"><input class="es-note-category-parent form-radio text-indigo-600" type="radio" ' . esc_attr( $checked_selected ) . ' value="selected_cat"  name="campaign_data[es_note_cat_parent]">' . __(
 			'Select Categories',
 			'email-subscribers'
@@ -674,7 +717,7 @@ class ES_Common {
 
 			$category_html .= '<tr class="es-note-child-category"><td style="padding-top:4px;padding-bottom:4px;padding-right:10px;"><span class="block pr-4 text-sm font-normal text-gray-600 pb-1"><input type="checkbox" class="form-checkbox" ' . esc_attr( $checked ) . ' value="' . esc_attr( $category->term_id ) . '" id="es_note_cat[]" name="campaign_data[es_note_cat][]">' . esc_html( $category->name ) . '</td></tr>';
 		}
-		$checked_all = in_array( 'All', $category_names ) ? "checked='checked'" : '';
+		$checked_all = ! array_intersect( array( 'selected_cat', 'None' ), $category_names ) ? "checked='checked'" : '';
 		$all_html    = '<tr><td style="padding-top:4px;padding-bottom:4px;padding-right:10px;"><span class="block pr-4 text-sm font-normal text-gray-600 pb-1"><input type="radio" class="form-radio text-indigo-600 es-note-category-parent"  ' . esc_attr( $checked_all ) . ' value="{a}All{a}"  name="campaign_data[es_note_cat_parent]">' . __(
 			'All Categories (Also include all categories which will create later)',
 			'email-subscribers'
@@ -1836,7 +1879,7 @@ class ES_Common {
 			$pricing_page_url = admin_url( 'admin.php?page=es_pricing' );
 
 			$articles_upsell[] = array(
-				'title'       => __( '<b>Email Subscribers Secret Club</b>', 'email-subscribers' ),
+				'title'       => __( '<b>Icegram Express</b>) Secret Club', 'email-subscribers' ),
 				'link'        => 'https://www.facebook.com/groups/2298909487017349/',
 				'label'       => __( 'Join Now', 'email-subscribers' ),
 				'label_class' => 'bg-green-100 text-green-800',
@@ -1844,9 +1887,9 @@ class ES_Common {
 
 			if ( ! ES()->is_premium() ) {
 				$articles_upsell[] = array(
-					'title'       => __( 'Email Subscribers PRO', 'email-subscribers' ),
+					'title'       => __( 'Icegram Express MAX', 'email-subscribers' ),
 					'link'        => $pricing_page_url,
-					'label'       => __( 'PRO', 'email-subscribers' ),
+					'label'       => __( 'MAX', 'email-subscribers' ),
 					'label_class' => 'bg-green-100 text-green-800',
 				);
 			}
@@ -1935,6 +1978,54 @@ class ES_Common {
 		$convert_time_format = get_option( 'time_format' );
 
 		return date_i18n( "$convert_date_format $convert_time_format", strtotime( $date ) );
+	}
+
+	/**
+	 * Get next local midnight time
+	 * 
+	 * @since 5.5.2
+	 * 
+	 * @return string $local_next_midnight_time next local midnight time
+	 */
+	public static function get_next_local_midnight_time() {
+		$next_day_utc_time   = time() + DAY_IN_SECONDS;
+		$offset_in_seconds   = self::get_timezone_offset_in_seconds();
+		$next_day_local_time = $next_day_utc_time + $offset_in_seconds;
+		$next_day_local_date = date_i18n( 'Y-m-d H:i:s', $next_day_local_time );
+	
+		$local_date_obj = new DateTime( $next_day_local_date );
+		$local_date_obj->setTime( 0, 0, 0 );
+	
+		$local_next_midnight_time = $local_date_obj->getTimestamp();
+
+		return $local_next_midnight_time;
+	}
+
+	/**
+	 * Convert UTC time for local midnight time
+	 * 
+	 * @since 5.5.2
+	 * 
+	 * @return string $utc_time_for_local_midnight UTC time local midnight time
+	 */
+	public static function get_utc_time_for_local_midnight_time() {
+		$offset_in_seconds           = self::get_timezone_offset_in_seconds();
+		$next_local_midnight_time    = self::get_next_local_midnight_time();
+		$utc_time_for_local_midnight = $next_local_midnight_time - $offset_in_seconds;
+		return $utc_time_for_local_midnight;
+	}
+
+	/**
+	 * Get site's timezone offset in seconds
+	 * 
+	 * @since 5.5.2
+	 * 
+	 * @return int $offset_in_seconds
+	 */
+	public static function get_timezone_offset_in_seconds() {
+		$offset            = get_option( 'gmt_offset' );
+		$offset_in_seconds = $offset * HOUR_IN_SECONDS;
+		return $offset_in_seconds;
 	}
 
 	/**
@@ -2791,9 +2882,9 @@ class ES_Common {
 	public static function download_image_from_url( $image_url ) {
 
 		$attachment_url = '';
-		$upload_dir = wp_upload_dir();
-		$image_data = file_get_contents( $image_url );
-		$filename   = basename( $image_url );
+		$upload_dir     = wp_upload_dir();
+		$image_data     = file_get_contents( $image_url );
+		$filename       = basename( $image_url );
 		if ( wp_mkdir_p( $upload_dir['path'] ) ) {
 			$file = $upload_dir['path'] . '/' . $filename;
 		} else {
@@ -2809,7 +2900,7 @@ class ES_Common {
 			'post_content'   => '',
 			'post_status'    => 'inherit',
 		);
-		$attach_id = wp_insert_attachment( $attachment, $file );
+		$attach_id   = wp_insert_attachment( $attachment, $file );
 		if ( ! empty( $attach_id ) ) {
 			$attachment_url = wp_get_attachment_url( $attach_id );
 		}

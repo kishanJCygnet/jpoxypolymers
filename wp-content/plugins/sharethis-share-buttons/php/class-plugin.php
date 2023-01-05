@@ -65,7 +65,7 @@ class Plugin extends Plugin_Base {
 		if ( is_array( $propertyid ) && array() !== $propertyid ) {
 			wp_register_script(
 				"{$this->assets_prefix}-mu",
-				"//platform-api.sharethis.com/js/sharethis.js#property={$propertyid[0]}&product={$first_prod}-buttons",
+				"//platform-api.sharethis.com/js/sharethis.js#property={$propertyid[0]}&product={$first_prod}-buttons&source=sharethis-share-buttons-wordpress",
 				array(),
 				SHARETHIS_SHARE_BUTTONS_VERSION,
 				false
@@ -119,6 +119,50 @@ class Plugin extends Plugin_Base {
 			"{$this->dir_url}css/meta-box.css",
 			array(),
 			filemtime( "{$this->dir_path}css/meta-box.css" )
+		);
+	}
+
+	/**
+	 * Helper to get the formated network image.
+	 *
+	 * @param string $title The netwokr title.
+	 *
+	 * @return string
+	 */
+	public static function getFormattedNetworkImage( $title ) {
+		return 'https://platform-cdn.sharethis.com/img/' . self::getPlatformName( $title ) . '.svg';
+	}
+
+	/**
+	 * Helper to format network title for image retrieval.
+	 *
+	 * @param string $title The network title.
+	 *
+	 * @return string
+	 */
+	public static function getFormattedNetworkTitle( $title ) {
+		return sanitize_title(
+			str_replace(
+				array( ' Share Button', 'Google Bookmarks', 'Yahoo Mail' ),
+				array( '', 'Bookmarks', 'YahooMail' ),
+				$title
+			)
+		);
+	}
+
+	/**
+	 *
+	 * Strips name to look like platform name.
+	 *
+	 * @param string $title Title string.
+	 *
+	 * @return string Modified title string.
+	 */
+	public static function getPlatformName( $title ) {
+		return str_replace(
+			array( '-pin', 'facebook-messenger', 'sina-', '-ru', 'yahoo-mail', 'okru' ),
+			array( '', 'messenger', '', 'ru', 'yahoomail', 'odnoklassniki' ),
+			$title
 		);
 	}
 }

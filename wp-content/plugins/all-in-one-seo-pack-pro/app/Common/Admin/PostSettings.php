@@ -22,6 +22,15 @@ class PostSettings {
 	 * @return void
 	 */
 	public function __construct() {
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+			return;
+		}
+
+		// Clear the Post Type Overview cache.
+		add_action( 'save_post', [ $this, 'clearPostTypeOverviewCache' ], 100 );
+		add_action( 'delete_post', [ $this, 'clearPostTypeOverviewCache' ], 100 );
+		add_action( 'wp_trash_post', [ $this, 'clearPostTypeOverviewCache' ], 100 );
+
 		if ( wp_doing_ajax() || wp_doing_cron() || ! is_admin() ) {
 			return;
 		}
@@ -39,11 +48,6 @@ class PostSettings {
 		add_action( 'save_post', [ $this, 'saveSettingsMetabox' ] );
 		add_action( 'edit_attachment', [ $this, 'saveSettingsMetabox' ] );
 		add_action( 'add_attachment', [ $this, 'saveSettingsMetabox' ] );
-
-		// Clear the Post Type Overview cache.
-		add_action( 'save_post', [ $this, 'clearPostTypeOverviewCache' ], 100 );
-		add_action( 'delete_post', [ $this, 'clearPostTypeOverviewCache' ], 100 );
-		add_action( 'wp_trash_post', [ $this, 'clearPostTypeOverviewCache' ], 100 );
 
 		// Filter the sql clauses to show posts filtered by our params.
 		add_filter( 'posts_clauses', [ $this, 'changeClausesToFilterPosts' ], 10, 2 );
@@ -172,10 +176,13 @@ class PostSettings {
 	 * @return void
 	 */
 	public function postSettingsHiddenField() {
-		if ( isset( $this->postSettingsHiddenFieldExists ) ) {
+		static $fieldExists = false;
+		if ( $fieldExists ) {
 			return;
 		}
-		$this->postSettingsHiddenFieldExists = true;
+
+		$fieldExists = true;
+
 		?>
 		<div id="aioseo-post-settings-field">
 			<input type="hidden" name="aioseo-post-settings" id="aioseo-post-settings" value=""/>
@@ -256,7 +263,8 @@ class PostSettings {
 				! $dynamicOptions->searchAppearance->postTypes->has( $postType ) ||
 				! $dynamicOptions->searchAppearance->postTypes->$postType->show ||
 				! $dynamicOptions->searchAppearance->postTypes->$postType->advanced->showMetaBox ||
-				'attachment' === $postType
+				'attachment' === $postType ||
+				aioseo()->helpers->isBBPressPostType( $postType )
 			) {
 				continue;
 			}
@@ -272,8 +280,8 @@ class PostSettings {
 	 *
 	 * @since 4.2.0
 	 *
-	 * @param string $postType The post type name.
-	 * @return array           The overview for the given post type.
+	 * @param  string $postType The post type name.
+	 * @return array            The overview for the given post type.
 	 */
 	public function getPostTypeOverview( $postType ) {
 		$overview = aioseo()->core->cache->get( $postType . '_overview_data' );
@@ -344,6 +352,7 @@ class PostSettings {
 			return $clauses;
 		}
 
+		$whereClause        = '';
 		$noKeyphrasesClause = " (aioseo_p.keyphrases = '' OR aioseo_p.keyphrases IS NULL OR aioseo_p.keyphrases LIKE '{\"focus\":[]%') ";
 		switch ( $filter ) {
 			case 'withoutFocusKeyphrase':
