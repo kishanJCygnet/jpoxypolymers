@@ -364,6 +364,7 @@ if ( ! class_exists( 'ES_Form_Admin' ) ) {
 			$form_id     = ! empty( $form_data['form_id'] ) ? $form_data['form_id'] : 0;
 			$form_name   = ! empty( $form_data['name'] ) ? $form_data['name'] : __( 'Untitled Form', 'email-subscribers' );
 			$editor_type = ! empty( $form_data['settings']['editor_type'] ) ? $form_data['settings']['editor_type'] : '';
+			$form_style  = ! empty( $form_data['settings']['form_style'] ) ? $form_data['settings']['form_style'] : '';
 
 			$action = 'new';
 			if ( $form_id ) {
@@ -384,6 +385,7 @@ if ( ! class_exists( 'ES_Form_Admin' ) ) {
 				<form  id="es-edit-form" method="POST" action="admin.php?page=es_forms&action=<?php echo esc_attr( $action ); ?>&form=<?php echo esc_attr( $form_id ); ?>&_wpnonce=<?php echo esc_attr( $nonce ); ?>">
 					<input type="hidden" id="form_id" name="form_data[id]" value="<?php echo esc_attr( $form_id ); ?>"/>
 					<input type="hidden" id="editor_type" name="form_data[settings][editor_type]" value="<?php echo esc_attr( $editor_type ); ?>"/>
+					<input type="hidden" id="form_style" name="form_data[settings][form_style]" value="<?php echo esc_attr( $form_style ); ?>"/>
 					<?php wp_nonce_field( 'ig-es-form-nonce', 'ig_es_form_nonce' ); ?>
 					<fieldset class="block es_fieldset">
 						<div class="mx-auto wp-heading-inline max-w-7xl">
@@ -460,17 +462,111 @@ if ( ! class_exists( 'ES_Form_Admin' ) ) {
 									?>
 								</textarea>
 								<script>
-									jQuery(document).ready(function(){
-										let editor_data = jQuery('#form-dnd-editor-data').val().trim();
-										if ( '' !== editor_data ) {
-											let is_valid_json = ig_es_is_valid_json( editor_data );
-											if ( is_valid_json ) {
-												editor_data = JSON.parse( editor_data );
+									jQuery(document).ready(function($){
+										if ( 'undefined' !== typeof wp && 'undefined' !== typeof wp.i18n ) {
+											window.__ = wp.i18n.__;
+										} else {
+											// Create a dummy fallback function incase i18n library isn't available.
+											window.__ = ( text, textDomain ) => {
+												return text;
 											}
-											jQuery(document).on("es_drag_and_drop_editor_loaded",function (event) {
-												window.esVisualEditor.importMjml(editor_data);
-											});
 										}
+
+										let editorData = $('#form-dnd-editor-data').val().trim();
+										$(document).on('es_drag_and_drop_editor_loaded',function (event) {
+											let frontendCSS    = ig_es_js_data.frontend_css;
+											let canvasHeadHTML = esVisualEditor.Canvas.getDocument().head.innerHTML;
+											canvasHeadHTML     += frontendCSS; // Append links/styles tags in Canvas head section
+											esVisualEditor.Canvas.getDocument().head.innerHTML = canvasHeadHTML;
+											if ( '' !== editorData ) {
+												let is_valid_json = ig_es_is_valid_json( editorData );
+												if ( is_valid_json ) {
+													editorData = JSON.parse( editorData );
+													window.esVisualEditor.importMjml(editorData);
+												}
+											}
+
+											let formStyles      = ig_es_js_data.form_styles;
+											let commonCSS       = ig_es_js_data.common_css;
+											let currentStyleId  = $('#form_style').val();
+											currentStyleId      = currentStyleId ? currentStyleId : 'theme-styling'; // Set default styling to theme style.
+											let currentStyle    = formStyles.find( style => currentStyleId === style.id );
+											let currentStyleCSS = '';
+
+											if ( currentStyle ) {
+												currentStyleCSS = currentStyle ? currentStyle.css : '';
+											} else {
+												// Set default style to theme styling.
+												let themeStyle  = formStyles.find( style => style.id === 'theme-styling' );
+												currentStyleCSS = themeStyle.css;
+											}
+											
+											esVisualEditor.setStyle( commonCSS + currentStyleCSS);
+
+											let esPlan             = ig_es_js_data.es_plan;
+											let isPremium          = ig_es_js_data.is_premium;
+											let canUpsellFormStyle = ! isPremium;
+
+											let formStylesHTML = `<div class="es-form-editor-options-sidebar">
+												<div class="pt-2 pb-4 mx-4">
+													<div class="flex w-full border-b border-gray-200 pb-2">
+														<div class="w-1/3 text-sm font-normal text-gray-600 leading-9">${__( 'Form style', 'email-subscribers' )}</div>
+														<div class="w-2/3 text-right">
+															<span class="relative inline-block">
+																<button id="form-style-button" type="button" class="py-1 px-2 ig-es-title-button">
+																	<span>${currentStyle ? currentStyle.name : __( 'Theme style', 'email-subscribers' ) }</span>
+																	<svg class="w-5 h-5 ml-2 -mr-1" fill="currentColor" viewBox="0 0 20 20">
+																		<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+																	</svg>
+																</button>
+																${canUpsellFormStyle ? '<span class="premium-icon ml-1 align-text-bottom"></span>' : ''}
+																<div x-show="open" id="form-styles-options" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="transform opacity-0 scale-95" x-transition:enter-end="transform opacity-100 scale-100" x-transition:leave="transition ease-in duration-75" x-transition:leave-start="transform opacity-100 scale-100"
+																		x-transition:leave-end="transform opacity-0 scale-95" class="absolute z-50 right-0 hidden w-56 mt-2 origin-top-right rounded-md shadow-lg text-left">
+																	<div class="bg-white rounded-md shadow-xs">
+																		<div class="py-1">
+																			${formStyles.map( style => `<span data-style-id="${style.id}" class="style-option block px-4 py-2 text-sm leading-5 text-gray-700 cursor-pointer hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900">${style.name}</span>`).join("")}
+																		</div>
+																	</div>
+																</div>
+															</span>
+														</div>
+													</div>
+												</div>
+											</div>`;
+		
+											$(formStylesHTML).insertBefore('.es-content');
+											
+											$('form#es-edit-form #form-style-button').on('click',()=>{
+												if ( canUpsellFormStyle ) {
+													window.open('https://www.icegram.com/express/pricing/?utm_source=in_app&utm_medium=form_styles&utm_campaign=es_upsell', '_blank');
+												} else {
+													$('form#es-edit-form #form-styles-options').toggle();
+												}
+											});
+
+											$(document).on("click", function (event) {
+												var $trigger = $("form#es-edit-form #form-style-button");
+												if ($trigger !== event.target && !$trigger.has(event.target).length) {
+													$("form#es-edit-form #form-styles-options").hide();
+												}
+											});
+
+											$('form#es-edit-form .style-option').on('click', (e) => {
+												e.preventDefault();
+												let style_id   = $(e.target).data('style-id');
+												let style_text = $(e.target).text();
+												$('#form_style').val(style_id).trigger('change');
+												$('#form-style-button span').text(style_text);
+												$('#ig-es-styles-options').toggle();
+											});
+											
+											$('form#es-edit-form #form_style').on('change',function(){
+												let selected_style_id  = $(this).val();
+												let selected_style     = formStyles.find(style => style.id === selected_style_id);
+												let selected_style_css = selected_style.css ? selected_style.css : '';
+												esVisualEditor.setStyle( commonCSS + selected_style_css );
+											});
+										});
 									});
 								</script>
 								<div class="bg-white rounded-lg shadow-md">
@@ -524,7 +620,7 @@ if ( ! class_exists( 'ES_Form_Admin' ) ) {
 													<?php
 													$allowedtags = ig_es_allowed_html_tags_in_esc();
 													if ( count( $lists ) > 0 ) {
-														$form_lists = ! empty( $form_data['settings']['lists'] ) ? $form_data['settings']['lists'] : array();
+														$form_lists       = ! empty( $form_data['settings']['lists'] ) ? $form_data['settings']['lists'] : array();
 														$lists_checkboxes = ES_Shortcode::prepare_lists_checkboxes( $lists, array_keys( $lists ), 3, (array) $form_lists, '', '', 'form_data[settings][lists][]' );
 														echo wp_kses( $lists_checkboxes, $allowedtags );
 													} else {
@@ -569,36 +665,15 @@ if ( ! class_exists( 'ES_Form_Admin' ) ) {
 
 			$response = array();
 
-			$form_data    = ig_es_get_request_data( 'form_data', array(), false );
+			$form_data = ig_es_get_request_data( 'form_data', array(), false );
 
 			$template_data            = array();
 			$template_data['content'] = ! empty( $form_data['body'] ) ? $form_data['body'] : '';
 			$template_data['form_id'] = ! empty( $form_data['id'] ) ? $form_data['id'] : 0;
-			$active_theme_url = get_template_directory_uri();
-			wp_register_style( 'es-theme-css', $active_theme_url . '/style.css', array(), time(), 'all' );
-			$es_wp_styles = wp_styles();
+			$editor_css 	          = ! empty( $form_data['settings']['dnd_editor_css'] ) ? $form_data['settings']['dnd_editor_css'] : '';
+			$form_body                = ! empty( $form_data['body'] ) ? do_shortcode( $form_data['body'] ) : '';
 
-			$preview_html = '<!DOCTYPE html>
-				<html lang="en">
-				<head>
-					<meta charset="UTF-8">
-					<meta name="viewport" content="width=device-width, initial-scale=1.0">
-					<meta http-equiv="X-UA-Compatible" content="ie=edge">
-					<title>Document</title>
-					';
-			ob_start();
-			$es_wp_styles->do_item( 'es-theme-css' );
-			$preview_html .= ob_get_clean();
-			$preview_html .= '<style>
-						' . $form_data['settings']['dnd_editor_css'] . '
-					</style>
-					</head>
-					<body>
-						<div class="ig-es-form-preview">
-							' . do_shortcode( $form_data['body'] ) . '
-							</div>
-							</body>
-							</html>';
+			$preview_html             = '<style>' . $editor_css . '</style>' . $form_body;
 			$response['preview_html'] = $preview_html;
 
 			if ( ! empty( $response ) ) {
@@ -606,6 +681,58 @@ if ( ! class_exists( 'ES_Form_Admin' ) ) {
 			} else {
 				wp_send_json_error();
 			}
+		}
+
+		public static function get_styles_path() {
+			$form_styles_path = ES_PLUGIN_DIR . 'lite/admin/css/form-styles/';
+			return $form_styles_path;
+		}
+
+		public static function get_form_styles() {
+			$form_styles_path = self::get_styles_path();
+
+			$form_styles = array(
+				array(
+					'id'   => 'theme-styling',
+					'name' => __( 'Theme styling', 'email-subscribers' ),
+					'css'  => file_get_contents( $form_styles_path . 'theme-styling.css' ),
+				),
+			);
+			$form_styles = apply_filters( 'ig_es_form_styles', $form_styles );
+			return $form_styles;
+		}
+
+		public static function get_frontend_css() {
+			$css_html = '';
+			$response = wp_remote_get(get_home_url());
+			if ( is_wp_error( $response )) {
+				return $css_html;
+			}
+			$content = $response['body'];
+			preg_match_all( '#<link\s+(?:[^>]*?\s+)?href=(\'|")?(https?[^\'"]+)(\'|")?#', $content, $links );
+			$links = $links[2];
+			foreach ( $links as $link) {
+				if (false === strpos( $link, '.css' ) ) {
+					continue;
+				}
+				$css_html .= '<link href="' . $link . '" ';
+				$css_html .= 'rel="stylesheet"/>';
+			}
+	
+			preg_match_all('/[<]style[^>]*[>]([^<]+)[<]\/style[>]/', $content, $matches, PREG_OFFSET_CAPTURE);
+			
+			$count = count($matches[1]);
+			for ( $i = 0; $i < $count; $i++ ) {
+				$css_html .= '<style type="text/css">' . $matches[1][$i][0] . '</style>';
+			}
+	
+			return $css_html;
+		}
+
+		public static function get_common_css() {
+			$form_styles_path = self::get_styles_path();
+			$common_css       = file_get_contents( $form_styles_path . 'common.css' );
+			return $common_css;
 		}
 	}
 

@@ -24,6 +24,15 @@ class Filesystem {
 	public $fs = null;
 
 	/**
+	 * Core class instance.
+	 *
+	 * @since 4.2.7
+	 *
+	 * @var \AIOSEO\Plugin\Common\Core\Core
+	 */
+	private $core = null;
+
+	/**
 	 * Class constructor.
 	 *
 	 * @since 4.1.9
@@ -45,7 +54,7 @@ class Filesystem {
 	 * @return void
 	 */
 	public function init( $args = [] ) {
-		require_once( ABSPATH . 'wp-admin/includes/file.php' );
+		require_once ABSPATH . 'wp-admin/includes/file.php';
 		WP_Filesystem( $args );
 
 		global $wp_filesystem;

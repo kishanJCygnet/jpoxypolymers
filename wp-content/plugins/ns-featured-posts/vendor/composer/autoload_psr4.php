@@ -6,7 +6,5 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
-    'Nilambar\\Optioner\\' => array($vendorDir . '/ernilambar/optioner/src'),
     'Nilambar\\AdminNotice\\' => array($vendorDir . '/ernilambar/wp-admin-notice/src'),
-    'Kirki\\' => array($vendorDir . '/kirki-framework/url-getter/src'),
 );

@@ -25,9 +25,9 @@ class Service extends CommonGraphs\Graph {
 	public function get( $graphData = null ) {
 		$data = [
 			'@type'       => 'Service',
-			'@id'         => ! empty( $graphData->properties->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#service',
+			'@id'         => ! empty( $graphData->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#service',
 			'name'        => ! empty( $graphData->properties->name ) ? $graphData->properties->name : get_the_title(),
-			'description' => ! empty( $graphData->properties->description ) ? $graphData->properties->description : aioseo()->schema->context['description'],
+			'description' => ! empty( $graphData->properties->description ) ? $graphData->properties->description : '',
 			'serviceType' => ! empty( $graphData->properties->serviceType ) ? $graphData->properties->serviceType : '',
 			'provider'    => [
 				'@type'  => 'Organization',
@@ -52,7 +52,7 @@ class Service extends CommonGraphs\Graph {
 		if ( isset( $graphData->properties->price ) && isset( $graphData->properties->currency ) ) {
 			$data['offers'] = [
 				'@type'         => 'Offer',
-				'price'         => $graphData->properties->price ? $graphData->properties->price : 0,
+				'price'         => $graphData->properties->price ? (float) $graphData->properties->price : 0,
 				'priceCurrency' => $graphData->properties->currency
 			];
 		}

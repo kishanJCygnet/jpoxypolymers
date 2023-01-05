@@ -472,13 +472,14 @@ if ( ! class_exists( 'IG_ES_Onboarding' ) ) {
 				$main_list_id = $main_list['id'];
 			}
 
-			// Get contact data for admin
+			// Get contact data for 
 			$admin_email = get_option( 'admin_email' );
-			$admin_name  = get_option( 'admin_email' );
 			$user        = get_user_by( 'email', $admin_email );
+			$admin_name  = '';			
 			$wp_user_id  = 0;
 			if ( $user instanceof WP_User ) {
 				$wp_user_id = $user->ID;
+				$admin_name = $user->display_name;
 			}
 
 			// Prepare admin contact data.
@@ -813,12 +814,12 @@ if ( ! class_exists( 'IG_ES_Onboarding' ) ) {
 
 			// First Create Default Template.
 			// Start-IG-Code.
-			$sample = '<strong style="color: #990000">What can you achieve using Email Subscribers?</strong><p>Add subscription forms on website, send HTML newsletters & automatically notify subscribers about new blog posts once it is published.';
+			$sample = '<strong style="color: #990000">What can you achieve using Icegram Express?</strong><p>Add subscription forms on website, send HTML newsletters & automatically notify subscribers about new blog posts once it is published.';
 			// End-IG-Code.
 			// Start-Woo-Code.
-			$sample = '<strong style="color: #990000">What can you achieve using Email Subscribers?</strong><p>Add subscription forms on website, send HTML newsletters.';
+			$sample = '<strong style="color: #990000">What can you achieve using Icegram Express?</strong><p>Add subscription forms on website, send HTML newsletters.';
 			// End-Woo-Code.
-			$sample .= ' You can also Import or Export subscribers from any list to Email Subscribers.</p>';
+			$sample .= ' You can also Import or Export subscribers from any list to Icegram Express.</p>';
 			$sample .= ' <strong style="color: #990000">Plugin Features</strong><ol>';
 			// Start-IG-Code.
 			$sample .= ' <li>Send notification emails to subscribers when new blog posts are published.</li>';
@@ -833,8 +834,8 @@ if ( ! class_exists( 'IG_ES_Onboarding' ) ) {
 			$sample .= ' </ol>';
 			$sample .= ' <strong>Thanks & Regards,</strong><br/>Admin<br/>';
 
-			$title   = esc_html__( 'Welcome To Email Subscribers', 'email-subscribers' );
-			$subject = esc_html__( 'Welcome To Email Subscribers', 'email-subscribers' );
+			$title   = esc_html__( 'Welcome To Icegram Express', 'email-subscribers' );
+			$subject = esc_html__( 'Welcome To Icegram Express', 'email-subscribers' );
 
 			// Create Broadcast Campaign
 

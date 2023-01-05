@@ -514,7 +514,8 @@
 				// Update total count in lists
 				var params = {
 					action: 'count_contacts_by_list',
-					list_id: selected_list_id
+					list_id: selected_list_id,
+					security: ig_es_js_data.security,
 				};
 
 				$.ajax({
@@ -743,17 +744,17 @@
 						jQuery(campaign_rules).each(function(index,elem){
 							var list_rule_option = jQuery(this).find('option[value = "_lists__in"]');
 							var list_rule_text   = jQuery(list_rule_option).text();
-							list_rule_text       = list_rule_text.replace(' [PRO]','');
+							list_rule_text       = list_rule_text.replace(' [MAX]','');
 							if ( 'undefined' !== typeof selected_elem ) {
 								if( disable_list_rule && ! ( jQuery(selected_elem)[0] === elem ) ) {
-									list_rule_text += ' [PRO]';
+									list_rule_text += ' [MAX]';
 									jQuery(list_rule_option).prop("selected", false).attr('disabled','disabled');
 								} else {
 									jQuery(list_rule_option).removeAttr('disabled');
 								}
 							} else {
 								if( index > 0 && disable_list_rule ) {
-									list_rule_text += ' [PRO]';
+									list_rule_text += ' [MAX]';
 									jQuery(list_rule_option).prop("selected", false).attr('disabled','disabled');
 								} else {
 									jQuery(list_rule_option).removeAttr('disabled');
@@ -851,7 +852,8 @@
 					list_id: selected_list_id,
 					conditions: conditions,
 					status: 'subscribed',
-					get_count: get_count
+					get_count: get_count,
+					security: ig_es_js_data.security
 				};
 
 				if ( 'undefined' !== typeof update_contacts_counts_xhr && 'undefined' !== typeof update_contacts_counts_xhr[campaign_id] ) {
@@ -1268,7 +1270,20 @@
 				let template_button = $('#view_campaign_preview_button');
 				$(template_button).parent().find('.es-send-success').hide();
 				$(template_button).parent().find('.es-send-error').hide();
-				ig_es_show_campaign_preview_in_popup();
+				let campaign_data = $('form#campaign_form').serialize();
+				jQuery(template_button).addClass('loading');
+				ig_es_save_campaign( campaign_data ).then( response => {
+					if (response.success) {
+						let response_data = response.data;
+						let campaign_id   = response_data.campaign_id;
+						$('#campaign_id').val( campaign_id );
+						ig_es_show_campaign_preview_in_popup();
+					} else {
+						alert( ig_es_js_data.i18n_data.campaign_preivew_error_message );
+					}
+				}, response => {
+					alert( ig_es_js_data.i18n_data.campaign_preivew_error_message );
+				});
 			});
 
 			$('#view_template_preview_button').on('click', function(){
@@ -3464,12 +3479,10 @@
 					$('.es-form-lists').removeClass('hidden');
 				}
 
-				ig_es_sync_dnd_editor_content('#form-dnd-editor-data');
-
 				let form_data = $(this).closest('form').serialize();
 
 				// Add action to form data
-				form_data += form_data + '&action=ig_es_get_form_preview&preview_type=inline&security='  + ig_es_js_data.security;
+				form_data += form_data + '&action=ig_es_get_form_preview&security='  + ig_es_js_data.security;
 				jQuery.ajax({
 					method: 'POST',
 					url: ajaxurl,
@@ -3480,6 +3493,7 @@
 							if ( 'undefined' !== typeof response.data ) {
 								let response_data    = response.data;
 								let preview_html     = response_data.preview_html;
+								preview_html         = ig_es_preprare_iframe_preview_html( preview_html );
 
 								ig_es_load_iframe_preview('.form_preview_content', preview_html);
 							}
@@ -3508,216 +3522,214 @@
 			});
 			/* DND form builder code end */
 
-			jQuery('body')
-						.on('click', '#ig-es-delete-template-image', function (e) {
-							e.preventDefault();
-							jQuery('#ig-es-template-image-attachment-container').addClass('hidden');
-							jQuery('#ig-es-add-template-image').removeClass('hidden');
+		jQuery('body')
+		.on('click', '#ig-es-delete-template-image', function (e) {
+			e.preventDefault();
+			jQuery('#ig-es-template-image-attachment-container').addClass('hidden');
+			jQuery('#ig-es-add-template-image').removeClass('hidden');
+		})
+		.on('click', '#ig-es-add-template-image', function (e) {
+			e.preventDefault();
+			jQuery(this).addClass('clicked');
+			if ( ! wp.media.frames.ig_es_attachments ) {
+				// Create the media frame.
+				wp.media.frames.ig_es_attachments = wp.media({
+					// Set the title of the modal.
+					title: es_admin_data.i18n_data.add_attachment_text,
+					button: {
+						text: es_admin_data.i18n_data.add_attachment_text,
+					},
+					multiple: false,
+					states: [
+						new wp.media.controller.Library({
+							filterable: 'png,jpg',
+							multiple: false
 						})
-						.on('click', '#ig-es-add-template-image', function (e) {
-							e.preventDefault();
-							jQuery(this).addClass('clicked');
-							if ( ! wp.media.frames.ig_es_attachments ) {
-								// Create the media frame.
-								wp.media.frames.ig_es_attachments = wp.media({
-									// Set the title of the modal.
-									title: es_admin_data.i18n_data.add_attachment_text,
-									button: {
-										text: es_admin_data.i18n_data.add_attachment_text,
-									},
-									multiple: false,
-									states: [
-										new wp.media.controller.Library({
-											filterable: 'png,jpg',
-											multiple: false
-										})
-									]
-								});
+					]
+				});
 
-								// When a user click on Add file button.
-								wp.media.frames.ig_es_attachments.on('select', function () {
-									let attachment = wp.media.frames.ig_es_attachments.state().get('selection').first().toJSON();
-									jQuery('#ig-es-template-image-attachment-container').removeClass('hidden');
-									jQuery('#ig_es_template_attachment_image').attr('src', attachment.url);
-									jQuery('#ig_es_template_attachment_id').val(attachment.id);
-									jQuery('#ig-es-template-image-attachment-container').removeClass('hidden');
-									jQuery('#ig-es-add-template-image').addClass('hidden');
-								});
-							}
-							wp.media.frames.ig_es_attachments.open();
-						});
-			$('#es_template_type').on('change',function(){
-				let template_type = $(this).val();
-				$('#edit-campaign-form-container').attr('data-campaign-type', template_type);
-				ig_es_add_dnd_rte_tags(template_type);
-			});
+				// When a user click on Add file button.
+				wp.media.frames.ig_es_attachments.on('select', function () {
+					let attachment = wp.media.frames.ig_es_attachments.state().get('selection').first().toJSON();
+					jQuery('#ig-es-template-image-attachment-container').removeClass('hidden');
+					jQuery('#ig_es_template_attachment_image').attr('src', attachment.url);
+					jQuery('#ig_es_template_attachment_id').val(attachment.id);
+					jQuery('#ig-es-template-image-attachment-container').removeClass('hidden');
+					jQuery('#ig-es-add-template-image').addClass('hidden');
+				});
+			}
+			wp.media.frames.ig_es_attachments.open();
 		});
+		$('#es_template_type').on('change',function(){
+			let template_type = $(this).val();
+			$('#edit-campaign-form-container').attr('data-campaign-type', template_type);
+			ig_es_add_dnd_rte_tags(template_type);
+		});
+	});
 
-		function ig_es_uc_first(string){
-			return string.charAt(0).toUpperCase() + string.slice(1);
+	function ig_es_uc_first(string){
+		return string.charAt(0).toUpperCase() + string.slice(1);
+	}
+
+	function ig_es_draft_broadcast( trigger_elem ) {
+		let is_draft_bttuon = $(trigger_elem).hasClass('ig_es_draft_broadcast');
+		let is_save_bttuon  = $(trigger_elem).hasClass('ig_es_save_broadcast');
+
+		let broadcast_subject = $('#ig_es_broadcast_subject').val();
+		if ( '' === broadcast_subject ) {
+			if ( is_draft_bttuon ) {
+				alert( ig_es_js_data.i18n_data.broadcast_subject_empty_message );
+			}
+			return;
 		}
 
-		function ig_es_draft_broadcast( trigger_elem ) {
-			let is_draft_bttuon = $(trigger_elem).hasClass('ig_es_draft_broadcast');
-			let is_save_bttuon  = $(trigger_elem).hasClass('ig_es_save_broadcast');
+		// If draft button is clicked then change broadcast status to draft..
+		if ( is_draft_bttuon ) {
+			$('#broadcast_status').val(0);
+		}
 
-			let broadcast_subject = $('#ig_es_broadcast_subject').val();
-			if ( '' === broadcast_subject ) {
-				if ( is_draft_bttuon ) {
-					alert( ig_es_js_data.i18n_data.broadcast_subject_empty_message );
-				}
-				return;
-			}
+		ig_es_sync_wp_editor_content();
 
-			// If draft button is clicked then change broadcast status to draft..
-			if ( is_draft_bttuon ) {
-				$('#broadcast_status').val(0);
-			}
-
-			ig_es_sync_wp_editor_content();
-
-			let form_data = $(trigger_elem).closest('form').serialize();
-			// Add action to form data
-			form_data += '&action=ig_es_draft_broadcast&security='  + ig_es_js_data.security;
-			jQuery.ajax({
-				method: 'POST',
-				url: ajaxurl,
-				data: form_data,
-				dataType: 'json',
-				beforeSend: function() {
-					// Prevent submit button untill saving is complete.
-					$('#ig_es_broadcast_submitted').addClass('opacity-50 cursor-not-allowed').attr('disabled','disabled');
-				},
-				success: function (response) {
-					if (response.success) {
-						if ( 'undefined' !== typeof response.data ) {
-							let response_data = response.data;
-							let broadcast_id  = response_data.broadcast_id;
-							$('#broadcast_id').val( broadcast_id );
-							if ( is_draft_bttuon || is_save_bttuon ) {
-								alert( ig_es_js_data.i18n_data.broadcast_saved_message );
-							}
-						} else {
-							if ( is_draft_bttuon ) {
-								alert( ig_es_js_data.i18n_data.broadcast_error_message );
-							}
+		let form_data = $(trigger_elem).closest('form').serialize();
+		// Add action to form data
+		form_data += '&action=ig_es_draft_broadcast&security='  + ig_es_js_data.security;
+		jQuery.ajax({
+			method: 'POST',
+			url: ajaxurl,
+			data: form_data,
+			dataType: 'json',
+			beforeSend: function() {
+				// Prevent submit button untill saving is complete.
+				$('#ig_es_broadcast_submitted').addClass('opacity-50 cursor-not-allowed').attr('disabled','disabled');
+			},
+			success: function (response) {
+				if (response.success) {
+					if ( 'undefined' !== typeof response.data ) {
+						let response_data = response.data;
+						let broadcast_id  = response_data.broadcast_id;
+						$('#broadcast_id').val( broadcast_id );
+						if ( is_draft_bttuon || is_save_bttuon ) {
+							alert( ig_es_js_data.i18n_data.broadcast_saved_message );
 						}
 					} else {
-						alert( ig_es_js_data.i18n_data.ajax_error_message );
-					}
-				},
-				error: function (err) {
-					alert( ig_es_js_data.i18n_data.ajax_error_message );
-				}
-			}).always(function(){
-				$('#ig_es_broadcast_submitted').removeClass('opacity-50 cursor-not-allowed').removeAttr('disabled');
-			});
-		}
-
-		let drafting_campaign = false;
-		function ig_es_draft_campaign( trigger_elem ) {
-
-			if( drafting_campaign){
-				return;
-			}
-
-			drafting_campaign = true;
-			let is_draft_bttuon = $(trigger_elem).hasClass('ig_es_draft_campaign');
-			let is_save_bttuon  = $(trigger_elem).hasClass('ig_es_save_campaign');
-
-			let campaign_subject = $('#ig_es_campaign_subject').val();
-			if ( '' === campaign_subject ) {
-				if ( is_draft_bttuon ) {
-					alert( ig_es_js_data.i18n_data.campaign_subject_empty_message );
-				}
-				drafting_campaign = false;
-				return;
-			}
-
-			// If draft button is clicked then change campaign status to draft..
-			if ( is_draft_bttuon ) {
-				$('#campaign_status').val(0);
-			}
-
-			ig_es_sync_wp_editor_content();
-
-			let form_data = $(trigger_elem).closest('form').serialize();
-			// Add action to form data
-			form_data += '&action=ig_es_draft_campaign&security='  + ig_es_js_data.security;
-			jQuery.ajax({
-				method: 'POST',
-				url: ajaxurl,
-				data: form_data,
-				dataType: 'json',
-				beforeSend: function() {
-					// Prevent submit button untill saving is complete.
-					$('#ig_es_campaign_submitted').addClass('opacity-50 cursor-not-allowed').attr('disabled','disabled');
-				},
-				success: function (response) {
-					if (response.success) {
-						if ( 'undefined' !== typeof response.data ) {
-							let response_data = response.data;
-							let campaign_id  = response_data.campaign_id;
-							$('#campaign_id').val( campaign_id );
-							if ( is_draft_bttuon || is_save_bttuon ) {
-								alert( ig_es_js_data.i18n_data.campaign_saved_message );
-							}
-						} else {
-							if ( is_draft_bttuon ) {
-								alert( ig_es_js_data.i18n_data.campaign_error_message );
-							}
+						if ( is_draft_bttuon ) {
+							alert( ig_es_js_data.i18n_data.broadcast_error_message );
 						}
-					} else {
-						alert( ig_es_js_data.i18n_data.ajax_error_message );
 					}
-				},
-				error: function (err) {
+				} else {
 					alert( ig_es_js_data.i18n_data.ajax_error_message );
 				}
-			}).always(function(){
-				drafting_campaign = false;
-				$('#ig_es_campaign_submitted').removeClass('opacity-50 cursor-not-allowed').removeAttr('disabled');
-			});
-		}
-
-		function ig_es_save_campaign_as_template() {
-
-			ig_es_sync_wp_editor_content();
-
-			let campaign_subject = $('#ig_es_campaign_subject').val();
-			let campaign_content = $('textarea[name="campaign_data[body]"]').val();
-
-			if ( '' === campaign_subject || '' === campaign_content ) {
-				return;
+			},
+			error: function (err) {
+				alert( ig_es_js_data.i18n_data.ajax_error_message );
 			}
+		}).always(function(){
+			$('#ig_es_broadcast_submitted').removeClass('opacity-50 cursor-not-allowed').removeAttr('disabled');
+		});
+	}
 
-			let save_template_button = $('#save_campaign_as_template_button');
+	let drafting_campaign = false;
+	function ig_es_draft_campaign( trigger_elem ) {
 
-			let form_data = $('form#campaign_form').serialize();
-			// Add action to form data
-			form_data += '&action=ig_es_save_as_template&security='  + ig_es_js_data.security;
-			jQuery.ajax({
-				method: 'POST',
-				url: ajaxurl,
-				data: form_data,
-				dataType: 'json',
-				beforeSend: function() {
-					$(save_template_button).next('.es-loader').show();
-				},
-				success: function (response) {
-					if ( response.success ) {
-						$(save_template_button).parent().find('.es-saved-success').show();
-					} else {
-						$(save_template_button).parent().find('.es-saved-error').show();
-					}
-				},
-				error: function (err) {
-					alert( ig_es_js_data.i18n_data.ajax_error_message );
-				}
-			}).always(function(){
-				$(save_template_button).next('.es-loader').hide();
-			});
+		if( drafting_campaign ){
+			return;
 		}
+
+		drafting_campaign = true;
+		let is_draft_bttuon = $(trigger_elem).hasClass('ig_es_draft_campaign');
+		let is_save_bttuon  = $(trigger_elem).hasClass('ig_es_save_campaign');
+
+		let campaign_subject = $('#ig_es_campaign_subject').val();
+		if ( '' === campaign_subject ) {
+			if ( is_draft_bttuon ) {
+				alert( ig_es_js_data.i18n_data.campaign_subject_empty_message );
+			}
+			drafting_campaign = false;
+			return;
+		}
+
+		// If draft button is clicked then change campaign status to draft..
+		if ( is_draft_bttuon ) {
+			$('#campaign_status').val(0);
+		}
+
+		ig_es_sync_wp_editor_content();
+		let campaign_data = $(trigger_elem).closest('form').serialize();
+
+		ig_es_save_campaign( campaign_data ).then( response => {
+			if (response.success) {
+				if ( 'undefined' !== typeof response.data ) {
+					let response_data = response.data;
+					let campaign_id  = response_data.campaign_id;
+					$('#campaign_id').val( campaign_id );
+					if ( is_draft_bttuon || is_save_bttuon ) {
+						alert( ig_es_js_data.i18n_data.campaign_saved_message );
+					}
+				} else {
+					if ( is_draft_bttuon ) {
+						alert( ig_es_js_data.i18n_data.campaign_error_message );
+					}
+				}
+			} else {
+				alert( ig_es_js_data.i18n_data.ajax_error_message );
+			}
+		}, response => {
+			alert( ig_es_js_data.i18n_data.ajax_error_message );
+		});
+	}
+
+	function ig_es_save_campaign( campaign_data ) {
+		campaign_data += '&action=ig_es_draft_campaign&security='  + ig_es_js_data.security;
+		return jQuery.ajax({
+			method: 'POST',
+			url: ajaxurl,
+			data: campaign_data,
+			dataType: 'json',
+			beforeSend: function() {
+				// Prevent submit button untill saving is complete.
+				$('#ig_es_campaign_submitted').addClass('opacity-50 cursor-not-allowed').attr('disabled','disabled');
+			}
+		});
+	}
+
+	function ig_es_save_campaign_as_template() {
+
+		ig_es_sync_wp_editor_content();
+
+		let campaign_subject = $('#ig_es_campaign_subject').val();
+		let campaign_content = $('textarea[name="campaign_data[body]"]').val();
+
+		if ( '' === campaign_subject || '' === campaign_content ) {
+			return;
+		}
+
+		let save_template_button = $('#save_campaign_as_template_button');
+
+		let form_data = $('form#campaign_form').serialize();
+		// Add action to form data
+		form_data += '&action=ig_es_save_as_template&security='  + ig_es_js_data.security;
+		jQuery.ajax({
+			method: 'POST',
+			url: ajaxurl,
+			data: form_data,
+			dataType: 'json',
+			beforeSend: function() {
+				$(save_template_button).next('.es-loader').show();
+			},
+			success: function (response) {
+				if ( response.success ) {
+					$(save_template_button).parent().find('.es-saved-success').show();
+				} else {
+					$(save_template_button).parent().find('.es-saved-error').show();
+				}
+			},
+			error: function (err) {
+				alert( ig_es_js_data.i18n_data.ajax_error_message );
+			}
+		}).always(function(){
+			$(save_template_button).next('.es-loader').hide();
+		});
+	}
 })(jQuery);
 
 
@@ -3785,8 +3797,7 @@ function ig_es_show_campaign_preview_in_popup() {
 		return;
 	}
 
-	let template_button = jQuery('#view_campaign_preview_button');
-	jQuery(template_button).addClass('loading');
+	
 	let form_data = jQuery('#view_campaign_preview_button').closest('form').serialize();
 	// Add action to form data
 	form_data += form_data + '&action=ig_es_get_campaign_preview&security='  + ig_es_js_data.security;
@@ -3816,7 +3827,7 @@ function ig_es_show_campaign_preview_in_popup() {
 			alert( ig_es_js_data.i18n_data.ajax_error_message );
 		}
 	}).done(function(){
-		jQuery(template_button).removeClass('loading');
+		jQuery('#view_campaign_preview_button').removeClass('loading');
 	});
 }
 
@@ -3993,6 +4004,30 @@ function ig_es_add_dnd_rte_tags ( campaign_type ) {
 }
 
 window.ig_es_add_dnd_rte_tags = ig_es_add_dnd_rte_tags;
+
+ig_es_preprare_iframe_preview_html = preview_html => {
+	let frontend_css = ig_es_get_frontend_css();
+    let iframe_html = `<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="UTF-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+			<meta http-equiv="X-UA-Compatible" content="ie=edge">
+			<title>Document</title>
+			${frontend_css}
+		</head>
+		<body style="background-color:#fff;padding:0">
+			<div class="ig-es-form-preview">
+				${preview_html}
+			</div>
+		</body>
+	</html>`;
+	return iframe_html;
+}
+
+ig_es_get_frontend_css = () => {
+	return ig_es_js_data.frontend_css;
+}
 
 jQuery.fn.extend({
 	ig_es_select2: function() {

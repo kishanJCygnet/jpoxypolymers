@@ -118,6 +118,7 @@ class Addons {
 			'addons'  => [],
 			// Translators: 1 - Opening bold tag, 2 - Plugin short name ("AIOSEO"), 3 - "Pro", 4 - Closing bold tag.
 			'message' => sprintf(
+				// Translators: 1 - Opening HTML strong tag, 2 - The short plugin name ("AIOSEO"), 3 - "Pro", 4 - Closing HTML strong tag.
 				__( 'The following addons cannot be used, because they require %1$s%2$s %3$s%4$s to work:', 'all-in-one-seo-pack' ),
 				'<strong>',
 				AIOSEO_PLUGIN_SHORT_NAME,
@@ -143,9 +144,9 @@ class Addons {
 	 *
 	 * @since 4.0.0
 	 *
-	 * @param  string  $sku        The addon sku.
-	 * @param  boolean $flushCache Whether or not to flush the cache.
-	 * @return object              The addon.
+	 * @param  string      $sku        The addon sku.
+	 * @param  bool        $flushCache Whether or not to flush the cache.
+	 * @return null|object             The addon.
 	 */
 	public function getAddon( $sku, $flushCache = false ) {
 		$addon     = null;
@@ -354,7 +355,7 @@ class Addons {
 	 * @return bool True if yes, false if not.
 	 */
 	public function canUpdate() {
-		if ( ! current_user_can( 'update_plugins' ) ) {
+		if ( ! current_user_can( 'update_plugins' ) && ! aioseo()->helpers->isDoingWpCli() ) {
 			return false;
 		}
 

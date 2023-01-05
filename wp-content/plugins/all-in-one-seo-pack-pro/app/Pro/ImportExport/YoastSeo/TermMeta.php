@@ -111,8 +111,8 @@ class TermMeta {
 					case 'is_robots_noimageindex':
 					case 'is_robots_nosnippet':
 						if ( (bool) $value ) {
-							$meta[ $mapping ] = ! empty( $value );
-							$meta['robots_default']          = false;
+							$meta[ $mapping ]       = true;
+							$meta['robots_default'] = false;
 						}
 						break;
 					case 'open_graph_image':

@@ -336,10 +336,11 @@ class PROFunctions{
 		$body_json = array();
 		$body_json["data"] = array();
 		$module_fields['Lead_created_for'] = array($module_fields['Lead_created_for']);
+		$module_fields['Downloaded'] = array($module_fields['Downloaded']);
 		array_push($body_json["data"], $module_fields);
 		$record = $zohoapi->Zoho_CreateRecord( $module,$body_json,$attachments);
-
-        if(isset($record['code'])){
+		
+		if(isset($record['code'])){
 			if($record['code']=='INVALID_TOKEN' || $record['code']=='AUTHENTICATION_FAILURE'){
 				$get_access_token=$zohoapi->refresh_token();
 	
@@ -734,8 +735,9 @@ $attachment='';
 		$zohoapi=new SmackZohoApi();
 		//$record = $zohoapi->Zoho_UpdateRecord( $module,$body_json,$ids_present);
 		$module_fields['Lead_created_for'] = array($module_fields['Lead_created_for']);
+		$module_fields['Downloaded'] = array($module_fields['Downloaded']);
 		$record = $zohoapi->Zoho_UpdateRecord( $module,$module_fields,$ids_present);
-
+		
 		if($record['code']=='INVALID_TOKEN' || $record['code']=='AUTHENTICATION_FAILURE'){
 
 			$get_access_token=$client->refresh_token();

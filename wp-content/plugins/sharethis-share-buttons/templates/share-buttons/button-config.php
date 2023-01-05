@@ -7,6 +7,8 @@
  * @package ShareThisShareButtons
  */
 
+use ShareThisShareButtons\Plugin;
+
 $button       = 'share_button_section_2' === $button['id'] ? 'sticky' : 'inline';
 $button_title = ucfirst( $button ) . ' Share Buttons';
 
@@ -25,44 +27,37 @@ $classes[] = strtolower( $button ) . '-platform platform-config-wrapper';
 	</div>
 
 <?php if ( 'inline' === $button ) : ?>
-	<p class="st-preview-message">
+	<p class="st-preview-message manual-select engage">
 		⇧ <?php echo esc_html__( 'Preview: click and drag to reorder' ); ?> ⇧
 	</p>
-<?php endif; ?>
+	<?php
+endif;
+
+require 'ssb.php';
+?>
 
 <div id="<?php echo esc_attr( strtolower( $button ) ); ?>" class="button-configuration-wrap selected-button">
-	<h3><?php echo esc_html__( 'Social networks', 'sharethis-share-buttons' ); ?></h3>
+	<h3 class="manual-select engage"><?php echo esc_html__( 'Social networks', 'sharethis-share-buttons' ); ?></h3>
 
-	<span class="config-desc">click a network to add or remove it from your preview. We've already included the most popular networks.</span>
+	<span class="config-desc manual-select engage">click a network to add or remove it from your preview. We've already included the most popular networks.</span>
 
-	<div class="<?php echo esc_attr( $button ); ?>-network-list share-buttons">
+	<div class="<?php echo esc_attr( $button ); ?>-network-list share-buttons manual-select engage">
 		<?php
 		foreach ( $networks as $network_name => $network_info ) :
-			$viewbox = isset( $network_info['viewbox'] ) ? '0 0 100 100' : '0 0 70 70';
-			$viewbox = isset( $network_info['viewbox-total'] ) ? esc_attr( $network_info['viewbox-total'] ) : $viewbox;
+			$social_image = Plugin::getFormattedNetworkImage( $network_name );
+			$network_name = Plugin::getPlatformName( $network_name );
 			?>
-			<div class="share-button" data-color="<?php echo esc_attr( $network_info['color'] ); ?>" data-selected="<?php echo esc_attr( $network_info['selected'] ); ?>" data-network="<?php echo esc_attr( $network_name ); ?>" title="<?php echo esc_attr( $network_name ); ?>" style="background: rgb(<?php echo esc_attr( $network_info['color-rgba'] ); ?>);">
-				<?php if ( true === isset( $network_info['full-svg'] ) ) : ?>
-					<?php echo $network_info['full-svg']; // @codingStandardsIgnoreLine ?>
-				<?php else : ?>
-					<svg fill="#fff" preserveAspectRatio="xMidYMid meet" height="2em" width="2em" viewBox="<?php echo esc_attr( $viewbox ); ?>">
-						<?php echo ! empty( $network_info['shape'] ) ? wp_kses_post( $network_info['shape'] ) : ''; ?>
-						<g>
-							<?php if ( is_array( $network_info['path'] ) ) : ?>
-								<?php foreach ( $network_info['path'] as $path_code ) : ?>
-									<path d="<?php echo esc_attr( $path_code ); ?>"></path>
-								<?php endforeach; ?>
-							<?php else : ?>
-								<path d="<?php echo esc_attr( $network_info['path'] ); ?>"></path>
-							<?php endif; ?>
-						</g>
-					</svg>
-				<?php endif; ?>
+			<div class="share-button" data-color="<?php echo esc_attr( $network_info['color'] ); ?>"
+				data-selected="<?php echo esc_attr( true === isset( $network_info['selected'] ) ? $network_info['selected'] : '' ); ?>"
+				data-network="<?php echo esc_attr( str_replace( 'pocket', 'getpocket', $network_name ) ); ?>"
+				title="<?php echo esc_attr( $network_name ); ?>"
+				style="background-color: <?php echo esc_attr( $network_info['color'] ); ?>;">
+				<img alt="<?php echo esc_attr( $network_name ); ?>" src="<?php echo esc_url( $social_image ); ?>" />
 			</div>
 		<?php endforeach; ?>
 	</div>
 
-	<span>
+	<span class="manual-select engage">
 			<div class="notes">
 				<span style="background: rgb(255, 189, 0); border-radius: 20px; font-size: 20px; margin: 0 .5rem; padding: 6px 0 0 5px;">
 					<svg fill="#fff" preserveAspectRatio="xMidYMid meet" height="1em" width="1em" viewBox="0 0 40 40">
@@ -320,4 +315,7 @@ $classes[] = strtolower( $button ) . '-platform platform-config-wrapper';
 			</div>
 		</div>
 	</div>
+	<?php if ( 'Enabled' === $enabled[ $button ] ) : ?>
+		<button class="disable-tool" data-button="<?php echo esc_attr( $button ); ?>">Disable Tool</button>
+	<?php endif; ?>
 </div>

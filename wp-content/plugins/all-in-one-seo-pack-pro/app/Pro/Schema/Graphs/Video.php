@@ -25,7 +25,7 @@ class Video extends CommonGraphs\Graph {
 	public function get( $graphData = null ) {
 		return [
 			'@type'            => 'VideoObject',
-			'@id'              => ! empty( $graphData->properties->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#video',
+			'@id'              => ! empty( $graphData->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#video',
 			'name'             => ! empty( $graphData->properties->name ) ? $graphData->properties->name : get_the_title(),
 			'description'      => ! empty( $graphData->properties->description ) ? $graphData->properties->description : aioseo()->schema->context['description'],
 			'contentUrl'       => ! empty( $graphData->properties->contentUrl ) ? $graphData->properties->contentUrl : '',

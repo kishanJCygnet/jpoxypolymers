@@ -2,6 +2,12 @@
 
     function northernbeacheswebsites_information(){
 
+        global $gotowebinar_is_pro;
+
+        if ($gotowebinar_is_pro == "YES"){ 
+            wp_gotowebinar_force_check_for_updates();
+        }
+
         $html = '<style type="text/css">
         
         @media only screen and (min-width: 768px){

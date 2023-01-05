@@ -123,7 +123,7 @@ class Admin extends CommonAdmin\Admin {
 	 * @return void
 	 */
 	public function loadUpdates() {
-		$this->updates = new Updates( [
+		new Updates( [
 			'pluginSlug' => 'all-in-one-seo-pack-pro',
 			'pluginPath' => plugin_basename( AIOSEO_FILE ),
 			'version'    => AIOSEO_VERSION,
@@ -217,7 +217,7 @@ class Admin extends CommonAdmin\Admin {
 		parent::scheduleUnescapeData();
 
 		aioseo()->core->cache->update( 'unslash_escaped_data_terms', time(), WEEK_IN_SECONDS );
-		aioseo()->helpers->scheduleSingleAction( 'aioseo_unslash_escaped_data_terms', 120 );
+		aioseo()->actionScheduler->scheduleSingle( 'aioseo_unslash_escaped_data_terms', 120 );
 	}
 
 	/**
@@ -245,7 +245,7 @@ class Admin extends CommonAdmin\Admin {
 			return;
 		}
 
-		aioseo()->helpers->scheduleSingleAction( 'aioseo_unslash_escaped_data_terms', 120, [], true );
+		aioseo()->actionScheduler->scheduleSingle( 'aioseo_unslash_escaped_data_terms', 120, [], true );
 
 		$postExclusiveColumns = [
 			'keyphrases',

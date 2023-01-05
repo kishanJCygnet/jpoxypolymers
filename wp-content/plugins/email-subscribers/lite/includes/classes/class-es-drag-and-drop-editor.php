@@ -86,7 +86,6 @@ class ES_Drag_And_Drop_Editor {
 		if ( ! self::is_dnd_editor_page() ) {
 			return;
 		}
-
 		
 		$current_page = ig_es_get_request_data( 'page' );
 		//Only for development - this branch only
@@ -94,17 +93,12 @@ class ES_Drag_And_Drop_Editor {
 		wp_register_script( 'es_editor_js', ES_PLUGIN_URL . 'lite/admin/js/editor.js', array( ), ES_PLUGIN_VERSION, true );
 		
 		if ( 'es_forms' === $current_page ) {
-			$active_theme_url = get_template_directory_uri();
-			$active_theme_css = $active_theme_url . '/style.css';
 
 			$lists = ES()->lists_db->get_lists();
 
 			$form_editor_data = array(
 				'lists' => $lists,
-				'styles' => array(
-					$active_theme_css
-				),
-				'i18n' => array(
+				'i18n'  => array(
 					'no_list_selected_message' => __( 'Please select list(s) in which contact will be subscribed.', 'email-subscribers' ),
 				),
 			);

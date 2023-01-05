@@ -27,24 +27,51 @@ class Schema extends CommonSchema\Schema {
 	];
 
 	/**
+	 * Instance of the FAQPage class.
+	 *
+	 * @since 4.2.6
+	 *
+	 * @var Graphs\FAQPage
+	 */
+	private $faqPageInstance;
+
+	/**
+	 * The user-defined FAQPage graph (if there is one).
+	 *
+	 * @since 4.2.6
+	 *
+	 * @var Object
+	 */
+	private $faqPageGraphData;
+
+	/**
+	 * Buffer to store FAQPage pairs before we output them under one main entity.
+	 *
+	 * @since 4.2.6
+	 *
+	 * @var array
+	 */
+	private $faqPages = [];
+
+	/**
 	 * Generates the JSON schema after the graphs/context have been determined.
 	 *
 	 * @since 4.2.5
 	 *
 	 * @param  array  $graphs       The graphs from the schema validator.
 	 * @param  array  $customGraphs The graphs from the schema validator.
-	 * @param  string $defaultGraph The default graph.
+	 * @param  object $default      The default graph data.
 	 * @param  bool   $isValidator  Whether the current call is for the validator.
 	 * @return string               The JSON schema output.
 	 */
-	protected function generateSchema( $graphs = [], $customGraphs = [], $defaultGraph = '', $isValidator = false ) {
+	protected function generateSchema( $graphs = [], $customGraphs = [], $default = null, $isValidator = false ) {
 		// Now, filter the graphs.
 		$this->graphs = apply_filters(
 			'aioseo_schema_graphs',
 			array_unique( array_filter( array_values( $this->graphs ) ) )
 		);
 
-		if ( ! $this->graphs ) {
+		if ( empty( $this->graphs ) ) {
 			return '';
 		}
 
@@ -64,15 +91,25 @@ class Schema extends CommonSchema\Schema {
 			$postGraphs = $metaData->schema->graphs;
 		}
 
+		if ( ! empty( $metaData->schema->default ) ) {
+			$default = $metaData->schema->default;
+		}
+
 		foreach ( $postGraphs as $graphData ) {
-			if ( is_array( $graphData ) ) {
-				$graphData = json_decode( wp_json_encode( $graphData ) );
-			}
+			$graphData = (object) $graphData;
 
 			if ( in_array( $graphData->graphName, $this->webPageGraphs, true ) ) {
 				$webPageGraphFound = true;
 				break;
 			}
+		}
+
+		if (
+			! empty( $default->isEnabled ) &&
+			! empty( $default->graphName ) &&
+			in_array( $default->graphName, [ 'FAQPage', 'WebPage' ], true )
+		) {
+			$webPageGraphFound = true;
 		}
 
 		if ( ! $webPageGraphFound ) {
@@ -82,7 +119,9 @@ class Schema extends CommonSchema\Schema {
 		// Now that we've determined the graphs, start generating their data.
 		$schema = [
 			'@context' => 'https://schema.org',
-			'@graph'   => []
+			// Let's first grab all the user-defined graphs (Schema Generator + blocks) if this a post.
+			// We want to do this before we get the regular smart graphs since we want to give the user-defined graphs a chance to "enqueue" any smart graphs they might require.
+			'@graph'   => $this->getUserDefinedGraphs( $graphs, $customGraphs, $default )
 		];
 
 		foreach ( $this->graphs as $graph ) {
@@ -100,15 +139,7 @@ class Schema extends CommonSchema\Schema {
 			}
 		}
 
-		// Now, let's also grab all the user-defined graphs (Schema Generator + blocks) if this a post.
-		$schema['@graph'] = array_merge( $schema['@graph'], $this->getUserDefinedGraphs( $graphs, $customGraphs ) );
-
-		$schema['@graph'] = apply_filters( 'aioseo_schema_output', $schema['@graph'] );
-		$schema['@graph'] = $this->helpers->cleanAndParseData( $schema['@graph'] );
-
-		return isset( $_GET['aioseo-dev'] ) || $isValidator
-			? wp_json_encode( $schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE )
-			: wp_json_encode( $schema );
+		return aioseo()->schema->helpers->getOutput( $schema, $isValidator );
 	}
 
 	/**
@@ -158,27 +189,21 @@ class Schema extends CommonSchema\Schema {
 	 *
 	 * @param  array $graphs       The graphs from the validator.
 	 * @param  array $customGraphs The custom graphs from the validator.
+	 * @param  array $default      The default graph data.
 	 * @return array               The graphs.
 	 */
-	private function getUserDefinedGraphs( $graphs = [], $customGraphs = [] ) {
-		$blockGraphs = $this->getBlockGraphs();
-
+	private function getUserDefinedGraphs( $graphs = [], $customGraphs = [], $default = [] ) {
 		// Get individual value.
 		$post     = aioseo()->helpers->getPost();
 		$metaData = aioseo()->meta->metaData->getMetaData( $post );
-		if (
-			empty( $graphs ) && empty( $metaData->schema->graphs ) &&
-			empty( $customGraphs ) && empty( $metaData->schema->customGraphs )
-		) {
-			return $blockGraphs;
+		if ( ! is_a( $post, 'WP_Post' ) || empty( $metaData->post_id ) ) {
+			return [];
 		}
 
-		$userDefinedGraphs = [];
 		$graphs            = ! empty( $graphs ) ? $graphs : $metaData->schema->graphs;
+		$userDefinedGraphs = [];
 		foreach ( $graphs as $graphData ) {
-			if ( is_array( $graphData ) ) {
-				$graphData = json_decode( wp_json_encode( $graphData ) );
-			}
+			$graphData = (object) $graphData;
 
 			if (
 				empty( $graphData->id ) ||
@@ -193,17 +218,29 @@ class Schema extends CommonSchema\Schema {
 				$graphData->graphName = $graphData->properties->type;
 			}
 
-			$namespace = $this->getGraphNamespace( $graphData->graphName );
-			if ( $namespace ) {
-				$userDefinedGraphs[] = ( new $namespace )->get( $graphData );
+			switch ( $graphData->graphName ) {
+				case 'FAQPage':
+					if ( null === $this->faqPageInstance ) {
+						$this->faqPageInstance = new Graphs\FAQPage;
+					}
+
+					// FAQ pages need to be collected first and added later because they should be nested under a parent graph.
+					// We'll also store the data since we need it for the name/description properties.
+					$this->faqPageGraphData = $graphData;
+					$this->faqPages         = array_merge( $this->faqPages, $this->faqPageInstance->get( $graphData ) );
+					break;
+				default:
+					$namespace = $this->getGraphNamespace( $graphData->graphName );
+					if ( $namespace ) {
+						$userDefinedGraphs[] = ( new $namespace )->get( $graphData );
+					}
+					break;
 			}
 		}
 
 		$customGraphs = ! empty( $customGraphs ) ? $customGraphs : $metaData->schema->customGraphs;
 		foreach ( $customGraphs as $customGraphData ) {
-			if ( is_array( $customGraphData ) ) {
-				$customGraphData = json_decode( wp_json_encode( $customGraphData ) );
-			}
+			$customGraphData = (object) $customGraphData;
 
 			if ( empty( $customGraphData->schema ) ) {
 				continue;
@@ -221,7 +258,40 @@ class Schema extends CommonSchema\Schema {
 			}
 		}
 
-		return array_merge( $userDefinedGraphs, $blockGraphs );
+		$default = ! empty( $default ) ? $default : $metaData->schema->default;
+		if ( ! empty( $default->isEnabled ) && ! empty( $default->graphName ) ) {
+			$graphData = ! empty( $default->data->{$default->graphName} ) ? $default->data->{$default->graphName} : [];
+			$namespace = $this->getGraphNamespace( $default->graphName );
+
+			switch ( $default->graphName ) {
+				case 'FAQPage':
+					if ( null === $this->faqPageInstance ) {
+						$this->faqPageInstance = new Graphs\FAQPage;
+					}
+
+					// FAQ pages need to be collected first and added later because they should be nested under a parent graph.
+					// We'll also store the data since we need it for the name/description properties.
+					$graphData              = $default->data->FAQPage;
+					$this->faqPageGraphData = $graphData;
+					$this->faqPages         = array_merge( $this->faqPages, $this->faqPageInstance->get( $graphData ) );
+					break;
+				default:
+					$namespace = $this->getGraphNamespace( $default->graphName );
+					if ( $namespace ) {
+						$userDefinedGraphs[] = ( new $namespace )->get( $graphData );
+					}
+					break;
+			}
+		}
+
+		$userDefinedGraphs = array_merge( $userDefinedGraphs, $this->getBlockGraphs() );
+
+		$this->faqPages = array_filter( $this->faqPages );
+		if ( ! empty( $this->faqPages ) && $this->faqPageInstance ) {
+			$userDefinedGraphs[] = $this->faqPageInstance->getMainGraph( $this->faqPages, $this->faqPageGraphData );
+		}
+
+		return $userDefinedGraphs;
 	}
 
 	/**
@@ -242,9 +312,7 @@ class Schema extends CommonSchema\Schema {
 			return [];
 		}
 
-		$graphs                 = [];
-		$faqPages               = [];
-		static $faqPageInstance = null;
+		$graphs = [];
 		foreach ( $metaData->schema->blockGraphs as $blockGraphData ) {
 			// If the type isn't set for whatever reason, then bail.
 			if ( empty( $blockGraphData->type ) ) {
@@ -254,21 +322,16 @@ class Schema extends CommonSchema\Schema {
 			$type = strtolower( $blockGraphData->type );
 			switch ( $type ) {
 				case 'aioseo/faq':
-					if ( null === $faqPageInstance ) {
-						$faqPageInstance = new Graphs\FAQPage;
+					if ( null === $this->faqPageInstance ) {
+						$this->faqPageInstance = new Graphs\FAQPage;
 					}
 
 					// FAQ pages need to be collected first and added later because they should be nested under a parent graph.
-					$faqPages[] = $faqPageInstance->get( [], $blockGraphData );
+					$this->faqPages[] = $this->faqPageInstance->get( $blockGraphData, true );
 					break;
 				default:
 					break;
 			}
-		}
-
-		$faqPages = array_filter( $faqPages );
-		if ( $faqPages ) {
-			$graphs[] = $faqPageInstance->getMainGraph( $faqPages );
 		}
 
 		return $graphs;
@@ -298,6 +361,40 @@ class Schema extends CommonSchema\Schema {
 				$this->graphs = array_merge( $this->graphs, $loadedAddon->schema->determineGraphsAndContext() );
 			}
 		}
+	}
+
+	/**
+	 * Determines the smart graphs and context for singular pages.
+	 *
+	 * @since 4.2.6
+	 *
+	 * @param  Context $contextInstance The Context class instance.
+	 * @param  bool    $isValidator     Whether we're getting the output for the validator.
+	 * @return void
+	 */
+	protected function determineContextSingular( $contextInstance, $isValidator ) { // phpcs:disable VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
+		// Check if we're on a BuddyPress member page.
+		if ( function_exists( 'bp_is_user' ) && bp_is_user() ) {
+			$this->graphs[] = 'ProfilePage';
+		}
+
+		$this->context = $contextInstance->post();
+	}
+
+	/**
+	 * Returns the default graph for the current post.
+	 *
+	 * @since 4.2.6
+	 *
+	 * @return string The default graph.
+	 */
+	public function getDefaultPostGraph() {
+		$metaData = aioseo()->meta->metaData->getMetaData();
+		if ( isset( $metaData->schema->defaultGraph ) ) {
+			return $metaData->schema->defaultGraph;
+		}
+
+		return $this->getDefaultPostTypeGraph();
 	}
 
 	/**
@@ -334,30 +431,48 @@ class Schema extends CommonSchema\Schema {
 	 * @param  int    $postId       The post ID.
 	 * @param  array  $graphs       The graphs from the schema validator.
 	 * @param  array  $customGraphs The custom graphs from the schema validator.
-	 * @param  string $defaultGraph The default graph.
+	 * @param  array  $default      The default graph data.
 	 * @return string               The JSON schema output.
 	 */
-	public function getValidatorOutput( $postId, $graphs, $customGraphs, $defaultGraph ) {
+	public function getValidatorOutput( $postId, $graphs, $customGraphs, $default ) {
 		$postObject = aioseo()->helpers->getPost( $postId );
 		if ( ! is_a( $postObject, 'WP_Post' ) ) {
 			return '';
 		}
 
 		global $wp_query, $post;
-		$post                        = $postObject;
-		$wp_query->post              = $postObject;
-		$wp_query->posts             = [ $postObject ];
-		$wp_query->post_count        = 1;
-		$wp_query->queried_object    = $postObject;
-		$wp_query->queried_object_id = $postId;
-		$wp_query->is_single         = true;
-		$wp_query->is_singular       = true;
+		$originalQuery = is_object( $wp_query ) ? clone $wp_query : $wp_query;
+		$originalPost  = is_object( $post ) ? clone $post : $post;
+		$isNewPost     = ! empty( $originalPost ) && ! $originalPost->post_title && ! $originalPost->post_name && 'auto-draft' === $originalPost->post_status;
 
-		$this->determineSmartGraphsAndContext( true );
+		// Only modify the query if there is no post on it set yet.
+		// Otherwise page builders like Divi and Elementor can't seem to load their visual builder.
+		if ( empty( $originalQuery->post ) ) {
+			$post                        = $postObject;
+			$wp_query->post              = $postObject;
+			$wp_query->posts             = [ $postObject ];
+			$wp_query->post_count        = 1;
+			$wp_query->queried_object    = $postObject;
+			$wp_query->queried_object_id = $postId;
+			$wp_query->is_single         = true;
+			$wp_query->is_singular       = true;
+		}
 
-		// Include the default graph here instead of letting the Schema class pull it from the stored options.
-		$this->graphs[] = $defaultGraph;
+		$this->determineSmartGraphsAndContext();
 
-		return $this->generateSchema( $graphs, $customGraphs, $defaultGraph, true );
+		$output = $this->generateSchema( $graphs, $customGraphs, $default, true );
+
+		// Reset the global objects.
+		if ( empty( $originalQuery->post ) ) {
+			$wp_query = $originalQuery;
+			$post     = $originalPost;
+		}
+
+		// We must reset the title for new posts because they will be given a "Auto Draft" one due to the schema class determining the schema output for the validator.
+		if ( $isNewPost ) {
+			$post->post_title = '';
+		}
+
+		return $output;
 	}
 }

@@ -24,7 +24,7 @@ class Xsl {
 
 		$charset     = aioseo()->helpers->getCharset();
 		$sitemapUrl  = wp_get_referer();
-		$sitemapPath = wp_parse_url( $sitemapUrl, PHP_URL_PATH );
+		$sitemapPath = aioseo()->helpers->getPermalinkPath( $sitemapUrl );
 		$sitemapName = strtoupper( pathinfo( $sitemapPath, PATHINFO_EXTENSION ) );
 
 		// Get Sitemap info by URL.
@@ -65,7 +65,7 @@ class Xsl {
 		$title = trim( $title );
 
 		echo '<?xml version="1.0" encoding="' . esc_attr( $charset ) . '"?>';
-		include_once( AIOSEO_DIR . '/app/Common/Views/sitemap/xsl/default.php' );
+		include_once AIOSEO_DIR . '/app/Common/Views/sitemap/xsl/default.php';
 		exit;
 	}
 

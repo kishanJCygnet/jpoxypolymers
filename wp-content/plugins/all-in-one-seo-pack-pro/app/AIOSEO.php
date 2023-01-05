@@ -7,10 +7,12 @@ namespace AIOSEO\Plugin {
 
 	/**
 	 * Main AIOSEO class.
+	 * We extend the abstract class as that one holds all the class properties.
 	 *
 	 * @since 4.0.0
 	 */
-	final class AIOSEO {
+	final class AIOSEO extends \AIOSEOAbstract {
+
 		/**
 		 * Holds the instance of the plugin currently in use.
 		 *
@@ -47,96 +49,6 @@ namespace AIOSEO\Plugin {
 		 * @var boolean
 		 */
 		public $versionPath = 'Lite';
-
-		/**
-		 * The AIOSEO options.
-		 *
-		 * @since 4.0.0
-		 *
-		 * @var array
-		 */
-		public $options = [];
-
-		/**
-		 * The AIOSEO dynamic options.
-		 *
-		 * @since 4.1.4
-		 *
-		 * @var array
-		 */
-		public $dynamicOptions = [];
-
-		/**
-		 * The WordPress filters to run.
-		 *
-		 * @since 4.0.0
-		 *
-		 * @var Filters
-		 */
-		private $filters = null;
-
-		/**
-		 * For usage tracking when enabled.
-		 *
-		 * @since 4.0.0
-		 *
-		 * @var Filters
-		 */
-		private $usage = null;
-
-		/**
-		 * For WP site health.
-		 *
-		 * @since 4.0.0
-		 *
-		 * @var Filters
-		 */
-		private $siteHealth = null;
-
-		/**
-		 * For auto updates.
-		 *
-		 * @since 4.0.0
-		 *
-		 * @var Filters
-		 */
-		private $autoUpdates = null;
-
-		/**
-		 * Holds our addon helper and loaded addons.
-		 *
-		 * @since 4.0.17
-		 *
-		 * @var object
-		 */
-		public $addons;
-
-		/**
-		 * Holds our template helper.
-		 *
-		 * @since 4.0.17
-		 *
-		 * @var Common\Utils\Templates
-		 */
-		public $templates;
-
-		/**
-		 * Holds our cache helper.
-		 *
-		 * @since 4.1.5
-		 *
-		 * @var Common\Utils\Cache
-		 */
-		public $cache;
-
-		/**
-		 * Holds our cache prune.
-		 *
-		 * @since 4.1.6
-		 *
-		 * @var Common\Utils\CachePrune
-		 */
-		public $cachePrune;
 
 		/**
 		 * Whether we're in a dev environment.
@@ -228,20 +140,23 @@ namespace AIOSEO\Plugin {
 		 */
 		private function includes() {
 			$dependencies = [
-				'/vendor/autoload.php',
-				'/vendor/woocommerce/action-scheduler/action-scheduler.php'
+				'/vendor/autoload.php'                                      => true,
+				'/vendor/woocommerce/action-scheduler/action-scheduler.php' => true,
+				'/vendor/jwhennessey/phpinsight/autoload.php'               => false,
+				'/vendor_prefixed/monolog/monolog/src/Monolog/Logger.php'   => false
 			];
 
-			foreach ( $dependencies as $path ) {
+			foreach ( $dependencies as $path => $shouldRequire ) {
 				if ( ! file_exists( AIOSEO_DIR . $path ) ) {
 					// Something is not right.
 					status_header( 500 );
 					wp_die( esc_html__( 'Plugin is missing required dependencies. Please contact support for more information.', 'all-in-one-seo-pack' ) );
 				}
-				require AIOSEO_DIR . $path;
-			}
 
-			add_action( 'plugins_loaded', [ $this, 'actionScheduler' ], 10 );
+				if ( $shouldRequire ) {
+					require AIOSEO_DIR . $path;
+				}
+			}
 
 			$this->loadVersion();
 		}
@@ -285,28 +200,6 @@ namespace AIOSEO\Plugin {
 		}
 
 		/**
-		 * Ensure our action scheduler tables are always set.
-		 *
-		 * @since 4.0.0
-		 *
-		 * @return void
-		 */
-		public function actionScheduler() {
-			// Only need to run this check in the admin.
-			if ( ! is_admin() ) {
-				return;
-			}
-
-			if ( class_exists( 'ActionScheduler' ) && class_exists( 'ActionScheduler_ListTable' ) ) {
-				new Common\Utils\ActionScheduler(
-					\ActionScheduler::store(),
-					\ActionScheduler::logger(),
-					\ActionScheduler::runner()
-				);
-			}
-		}
-
-		/**
 		 * Runs before we load the plugin.
 		 *
 		 * @since 4.0.0
@@ -320,7 +213,7 @@ namespace AIOSEO\Plugin {
 
 			// Internal Options.
 			$this->helpers                = $this->pro ? new Pro\Utils\Helpers() : new Lite\Utils\Helpers();
-			$this->internalNetworkOptions = ( $this->pro && is_multisite() ) ? new Pro\Options\InternalNetworkOptions() : new Common\Options\InternalNetworkOptions();
+			$this->internalNetworkOptions = ( $this->pro && $this->helpers->isPluginNetworkActivated() ) ? new Pro\Options\InternalNetworkOptions() : new Common\Options\InternalNetworkOptions();
 			$this->internalOptions        = $this->pro ? new Pro\Options\InternalOptions() : new Lite\Options\InternalOptions();
 
 			// Run pre-updates.
@@ -388,13 +281,13 @@ namespace AIOSEO\Plugin {
 			$this->breadcrumbs        = $this->pro ? new Pro\Breadcrumbs\Breadcrumbs() : new Common\Breadcrumbs\Breadcrumbs();
 			$this->dynamicBackup      = $this->pro ? new Pro\Options\DynamicBackup() : new Common\Options\DynamicBackup();
 			$this->options            = $this->pro ? new Pro\Options\Options() : new Lite\Options\Options();
-			$this->networkOptions     = ( $this->pro && is_multisite() ) ? new Pro\Options\NetworkOptions() : new Common\Options\NetworkOptions();
+			$this->networkOptions     = ( $this->pro && $this->helpers->isPluginNetworkActivated() ) ? new Pro\Options\NetworkOptions() : new Common\Options\NetworkOptions();
 			$this->dynamicOptions     = $this->pro ? new Pro\Options\DynamicOptions() : new Common\Options\DynamicOptions();
 			$this->backup             = new Common\Utils\Backup();
 			$this->access             = $this->pro ? new Pro\Utils\Access() : new Common\Utils\Access();
 			$this->usage              = $this->pro ? new Pro\Admin\Usage() : new Lite\Admin\Usage();
 			$this->siteHealth         = $this->pro ? new Pro\Admin\SiteHealth() : new Common\Admin\SiteHealth();
-			$this->networkLicense     = $this->pro && is_multisite() ? new Pro\Admin\NetworkLicense() : null;
+			$this->networkLicense     = $this->pro && $this->helpers->isPluginNetworkActivated() ? new Pro\Admin\NetworkLicense() : null;
 			$this->license            = $this->pro ? new Pro\Admin\License() : null;
 			$this->autoUpdates        = $this->pro ? new Pro\Admin\AutoUpdates() : null;
 			$this->updates            = $this->pro ? new Pro\Main\Updates() : new Common\Main\Updates();
@@ -406,7 +299,7 @@ namespace AIOSEO\Plugin {
 			$this->notices            = $this->pro ? new Pro\Admin\Notices\Notices() : new Lite\Admin\Notices\Notices();
 			$this->wpNotices          = new Common\Admin\Notices\WpNotices();
 			$this->admin              = $this->pro ? new Pro\Admin\Admin() : new Lite\Admin\Admin();
-			$this->networkAdmin       = is_multisite() ? ( $this->pro ? new Pro\Admin\NetworkAdmin() : new Common\Admin\NetworkAdmin() ) : null;
+			$this->networkAdmin       = $this->helpers->isPluginNetworkActivated() ? ( $this->pro ? new Pro\Admin\NetworkAdmin() : new Common\Admin\NetworkAdmin() ) : null;
 			$this->activate           = $this->pro ? new Pro\Main\Activate() : new Common\Main\Activate();
 			$this->conflictingPlugins = $this->pro ? new Pro\Admin\ConflictingPlugins() : new Common\Admin\ConflictingPlugins();
 			$this->migration          = $this->pro ? new Pro\Migration\Migration() : new Common\Migration\Migration();
@@ -419,6 +312,7 @@ namespace AIOSEO\Plugin {
 			$this->standalone         = new Common\Standalone\Standalone();
 			$this->slugMonitor        = new Common\Admin\SlugMonitor();
 			$this->schema             = $this->pro ? new Pro\Schema\Schema() : new Common\Schema\Schema();
+			$this->actionScheduler    = new Common\Utils\ActionScheduler();
 
 			if ( ! wp_doing_ajax() && ! wp_doing_cron() ) {
 				$this->rss       = new Common\Rss();

@@ -160,6 +160,10 @@ class GoogleAnalytics extends CommonMain\GoogleAnalytics {
 	 * @return bool Whether or not we can show GTM.
 	 */
 	public function canShowGtm() {
+		if ( aioseo()->helpers->isAmpPage() ) {
+			return false;
+		}
+
 		$containerId = aioseo()->options->deprecated->webmasterTools->googleAnalytics->gtmContainerId;
 
 		if (

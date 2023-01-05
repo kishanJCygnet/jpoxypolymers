@@ -15,28 +15,55 @@ use DateTime;
  */
 class Translations {
 	/**
-	 * Installed translations.
+	 * List of available translations.
 	 *
 	 * @since 4.0.0
 	 *
 	 * @var array
 	 */
-	static private $installedTranslations;
+	private static $installedTranslations = [];
 
 	/**
-	 * Available languages.
+	 * List of available languages.
 	 *
 	 * @since 4.0.0
 	 *
-	 * @var array
+	 * @var array[string]
 	 */
-	static private $availableLanguages;
+	private static $availableLanguages = [];
 
 	/**
-	 * Class Constructor
+	 * The project type.
 	 *
-	 * @param string $type   Project type. Either plugin or theme.
-	 * @param string $slug   Project directory slug.
+	 * @since 4.2.7
+	 *
+	 * @var string
+	 */
+	private $type = '';
+
+	/**
+	 * The project slug.
+	 *
+	 * @since 4.2.7
+	 *
+	 * @var string
+	 */
+	private $slug = '';
+
+	/**
+	 * The API URL.
+	 *
+	 * @since 4.2.7
+	 *
+	 * @var string
+	 */
+	private $apiUrl = '';
+
+	/**
+	 * Class constructor
+	 *
+	 * @param string $type   The project type ("plugin" or "theme").
+	 * @param string $slug   The project directory slug.
 	 * @param string $apiUrl Full GlotPress API URL for the project.
 	 */
 	public function __construct( $type, $slug, $apiUrl ) {

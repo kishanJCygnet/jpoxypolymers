@@ -25,10 +25,10 @@ class FactCheck extends CommonGraphs\Graph {
 	public function get( $graphData = null ) {
 		$data = [
 			'@type'         => 'ClaimReview',
-			'@id'           => ! empty( $graphData->properties->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#claimReview',
+			'@id'           => ! empty( $graphData->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#claimReview',
 			'name'          => ! empty( $graphData->properties->name ) ? $graphData->properties->name : get_the_title(),
-			'url'           => aioseo()->schema->context['url'],
 			'claimReviewed' => ! empty( $graphData->properties->claimReviewed ) ? $graphData->properties->claimReviewed : '',
+			'url'           => aioseo()->schema->context['url'],
 			'reviewRating'  => [],
 			'author'        => [],
 			'itemReviewed'  => [],
@@ -59,7 +59,7 @@ class FactCheck extends CommonGraphs\Graph {
 
 			$data['reviewRating'] = [
 				'@type'         => 'Rating',
-				'ratingValue'   => $graphData->properties->claimRating,
+				'ratingValue'   => (float) $graphData->properties->claimRating,
 				'bestRating'    => 5,
 				'worstRating'   => 1,
 				'alternateName' => $alternateName

@@ -25,7 +25,7 @@ class Movie extends CommonGraphs\Graph {
 	public function get( $graphData = null ) {
 		$data = [
 			'@type'       => 'Movie',
-			'@id'         => ! empty( $graphData->properties->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#video',
+			'@id'         => ! empty( $graphData->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#video',
 			'name'        => ! empty( $graphData->properties->name ) ? $graphData->properties->name : get_the_title(),
 			'description' => ! empty( $graphData->properties->description ) ? $graphData->properties->description : aioseo()->schema->context['description'],
 			'image'       => ! empty( $graphData->properties->image ) ? $this->image( $graphData->properties->image ) : $this->getFeaturedImage(),
@@ -45,9 +45,9 @@ class Movie extends CommonGraphs\Graph {
 				'reviewBody'   => $graphData->properties->review->content,
 				'reviewRating' => [
 					'@type'       => 'Rating',
-					'ratingValue' => (int) $graphData->properties->rating->value,
-					'worstRating' => (int) $graphData->properties->rating->minimum,
-					'bestRating'  => (int) $graphData->properties->rating->maximum
+					'ratingValue' => (float) $graphData->properties->rating->value,
+					'worstRating' => (float) $graphData->properties->rating->minimum,
+					'bestRating'  => (float) $graphData->properties->rating->maximum
 				],
 				'author'       => [
 					'@type' => 'Person',
@@ -57,9 +57,9 @@ class Movie extends CommonGraphs\Graph {
 
 			$data['aggregateRating'] = [
 				'@type'       => 'AggregateRating',
-				'ratingValue' => (int) $graphData->properties->rating->value,
-				'worstRating' => (int) $graphData->properties->rating->minimum,
-				'bestRating'  => (int) $graphData->properties->rating->maximum,
+				'ratingValue' => (float) $graphData->properties->rating->value,
+				'worstRating' => (float) $graphData->properties->rating->minimum,
+				'bestRating'  => (float) $graphData->properties->rating->maximum,
 				'reviewCount' => 1
 			];
 		}

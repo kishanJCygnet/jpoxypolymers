@@ -327,6 +327,11 @@ class License {
 	 * @param bool $belowH2
 	 */
 	public function notices( $belowH2 = false ) {
+		// Double check we're actually in the admin before outputting anything.
+		if ( ! is_admin() ) {
+			return;
+		}
+
 		// Grab the option and output any nag dealing with license keys.
 		$isActive = $this->isActive();
 		$expired  = $this->internalOptions->internal->license->expired;
@@ -340,21 +345,20 @@ class License {
 			<div class="notice notice-info <?php echo esc_attr( $belowH2 ); ?> aioseo-license-notice">
 				<p>
 					<?php
-					echo
-						wp_kses(
-							sprintf(
+					echo wp_kses(
+						sprintf(
 								// Translators: 1 - Opening link tag, 2 - Closing link tag, 4 - The plugin name ("All in One SEO").
-								esc_html__( 'Please %1$senter and activate%2$s your license key for %3$s to enable automatic updates.', 'aioseo-pro' ),
-								sprintf( '<a href="%1$s">', esc_url( add_query_arg( [ 'page' => 'aioseo-settings' ], admin_url( 'admin.php' ) ) ) ),
-								'</a>',
-								esc_html( AIOSEO_PLUGIN_NAME )
-							),
-							[
-								'a' => [
-									'href' => [],
-								],
-							]
-						)
+							esc_html__( 'Please %1$senter and activate%2$s your license key for %3$s to enable automatic updates.', 'aioseo-pro' ),
+							sprintf( '<a href="%1$s">', esc_url( add_query_arg( [ 'page' => 'aioseo-settings' ], admin_url( 'admin.php' ) ) ) ),
+							'</a>',
+							esc_html( AIOSEO_PLUGIN_NAME )
+						),
+						[
+							'a' => [
+								'href' => [],
+							],
+						]
+					)
 					?>
 				</p>
 			</div>
@@ -770,10 +774,10 @@ class License {
 	 *
 	 * @since 4.2.5
 	 *
-	 * @param  string  $type       The type of request, either activate or deactivate.
-	 * @param  string  $licenseKey The license key we are using for this request.
-	 * @param  array   $domains    An array of domains to activate or deactivate.
-	 * @return Object              The JSON response as an object.
+	 * @param  string      $type       The type of request, either activate or deactivate.
+	 * @param  string      $licenseKey The license key we are using for this request.
+	 * @param  array       $domains    An array of domains to activate or deactivate.
+	 * @return Object|null             The JSON response as an object.
 	 */
 	public function sendLicenseRequest( $type, $licenseKey, $domains ) {
 		$payload = [

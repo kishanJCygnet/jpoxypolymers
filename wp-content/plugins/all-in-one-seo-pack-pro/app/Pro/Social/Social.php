@@ -65,12 +65,12 @@ class Social extends CommonSocial\Social {
 			return;
 		}
 
-		if ( aioseo()->helpers->isScheduledAction( $this->bustOgCacheActionName, [ 'termId' => $termId ] ) ) {
+		if ( aioseo()->actionScheduler->isScheduled( $this->bustOgCacheActionName, [ 'termId' => $termId ] ) ) {
 			return;
 		}
 
 		// Schedule the new ping.
-		aioseo()->helpers->scheduleAsyncAction( $this->bustOgCacheActionName, [ 'termId' => $termId ] );
+		aioseo()->actionScheduler->scheduleAsync( $this->bustOgCacheActionName, [ 'termId' => $termId ] );
 	}
 
 	/**

@@ -27,10 +27,17 @@ class EddProduct extends Product {
 	 * @since 4.0.13
 	 */
 	public function __construct() {
-		add_filter( 'edd_add_schema_microdata', '__return_false' );
-		if ( aioseo()->helpers->isEddReviewsActive() ) {
-			add_filter( 'edd_reviews_json_ld_data', [ $this, 'unsetEddHeadSchema' ] );
-			remove_action( 'the_content', [ \EDD_Reviews::get_instance(), 'microdata' ] );
+		if ( version_compare( EDD_VERSION, '3.0.0', '<' ) ) {
+			add_filter( 'edd_add_schema_microdata', '__return_false' );
+
+			if ( aioseo()->helpers->isEddReviewsActive() ) {
+				add_filter( 'edd_reviews_json_ld_data', [ $this, 'unsetEddHeadSchema' ] );
+				remove_action( 'the_content', [ \EDD_Reviews::get_instance(), 'microdata' ] );
+			}
+		}
+
+		if ( version_compare( EDD_VERSION, '3.0.0', '>=' ) ) {
+			remove_action( 'wp_footer', [ \Easy_Digital_Downloads::instance()->structured_data, 'output_structured_data' ] );
 		}
 
 		$this->download = edd_get_download( get_the_id() );
@@ -66,17 +73,19 @@ class EddProduct extends Product {
 
 		$data = [
 			'@type'           => 'Product',
-			'@id'             => ! empty( $graphData->properties->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#eddProduct',
+			'@id'             => ! empty( $graphData->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#eddProduct',
 			'name'            => get_the_title(),
-			'description'     => ! empty( $graphData->properties->description ) ? $graphData->properties->description : aioseo()->schema->context['description'],
+			'description'     => ! empty( $graphData->properties->description ) ? $graphData->properties->description : aioseo()->helpers->getDescriptionFromContent( $this->download ),
 			'url'             => aioseo()->schema->context['url'],
 			'brand'           => '',
 			'sku'             => ! empty( $graphData->properties->identifiers->sku ) ? $graphData->properties->identifiers->sku : '',
 			'gtin'            => ! empty( $graphData->properties->identifiers->gtin ) ? $graphData->properties->identifiers->gtin : '',
 			'mpn'             => ! empty( $graphData->properties->identifiers->mpn ) ? $graphData->properties->identifiers->mpn : '',
+			'isbn'            => ! empty( $graphData->properties->identifiers->isbn ) ? $graphData->properties->identifiers->isbn : '',
 			'image'           => ! empty( $graphData->properties->image ) ? $graphData->properties->image : $this->getFeaturedImage(),
 			'aggregateRating' => aioseo()->helpers->isEddReviewsActive() ? $this->getEddAggregateRating() : $this->getAggregateRating(),
-			'review'          => aioseo()->helpers->isEddReviewsActive() ? $this->getEddReview() : $this->getReview()
+			'review'          => aioseo()->helpers->isEddReviewsActive() ? $this->getEddReview() : $this->getReview(),
+			'audience'        => $this->getAudience()
 		];
 
 		if ( ! empty( $graphData->properties->brand ) ) {
@@ -94,14 +103,16 @@ class EddProduct extends Product {
 	}
 
 	/**
-	 * Returns the offer data.
+	 * Returns the offer(s) data.
 	 *
 	 * @since 4.0.13
 	 *
-	 * @return array The offer data.
+	 * @return array The offer(s) data.
 	 */
 	protected function getOffers() {
-		$offer = [
+		$isVariable = method_exists( $this->download, 'has_variable_prices' ) && method_exists( $this->download, 'get_prices' ) ? $this->download->has_variable_prices() : false;
+
+		$defaultOffer = [
 			'@type'           => 'Offer',
 			'url'             => ! empty( $this->graphData->properties->id )
 				? aioseo()->schema->context['url'] . '#eddOffer-' . $this->graphData->id
@@ -114,15 +125,44 @@ class EddProduct extends Product {
 				: 'https://schema.org/InStock'
 		];
 
-		$dataFunctions = [
-			'price'         => 'getPrice',
-			'priceCurrency' => 'getPriceCurrency',
-			'category'      => 'getCategory'
-		];
+		if ( 'organization' === aioseo()->options->searchAppearance->global->schema->siteRepresents ) {
+			$homeUrl         = trailingslashit( home_url() );
+			$defaultOffer['seller'] = [
+				'@type' => 'Organization',
+				'@id'   => $homeUrl . '#organization',
+			];
+		}
 
-		$data = $this->getData( $offer, $dataFunctions );
+		if ( ! $isVariable ) {
+			$dataFunctions = [
+				'price'         => 'getPrice',
+				'priceCurrency' => 'getPriceCurrency',
+				'category'      => 'getCategory'
+			];
 
-		return $data;
+			$defaultOffer = $this->getData( $defaultOffer, $dataFunctions );
+
+			return $defaultOffer;
+		}
+
+		$offers = [];
+		$prices = $this->download->get_prices();
+		foreach ( $prices as $priceObject ) {
+			$offer                = $defaultOffer;
+			$offer['itemOffered'] = $this->download->post_title . ' - ' . $priceObject['name'];
+			$offer['price']       = (float) $priceObject['amount'];
+
+			$dataFunctions = [
+				'priceCurrency' => 'getPriceCurrency',
+				'category'      => 'getCategory'
+			];
+
+			$offer = $this->getData( $offer, $dataFunctions );
+
+			$offers[] = $offer;
+		}
+
+		return $offers;
 	}
 
 	/**
@@ -177,7 +217,7 @@ class EddProduct extends Product {
 			'@id'         => aioseo()->schema->context['url'] . '#aggregrateRating',
 			'worstRating' => 1,
 			'bestRating'  => 5,
-			'ratingValue' => get_post_meta( $this->download->get_id(), 'edd_reviews_average_rating', true ),
+			'ratingValue' => (float) get_post_meta( $this->download->get_id(), 'edd_reviews_average_rating', true ),
 			'reviewCount' => get_comments_number( $this->download->get_id() )
 		];
 	}
@@ -213,7 +253,7 @@ class EddProduct extends Product {
 				'@type'         => 'Review',
 				'reviewRating'  => [
 					'@type'       => 'Rating',
-					'ratingValue' => get_comment_meta( $comment->comment_ID, 'edd_rating', true ),
+					'ratingValue' => (float) get_comment_meta( $comment->comment_ID, 'edd_rating', true ),
 					'worstRating' => 1,
 					'bestRating'  => 5
 				],

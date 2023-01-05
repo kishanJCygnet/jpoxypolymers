@@ -7,10 +7,24 @@
 
 ?>
 <div class="gdpr-platform platform-config-wrapper">
-	<hr>
+	<h2>
+		<?php echo esc_html_e( 'Consent Management Platform', 'sharethis-share-buttons' ); ?>
+	</h2>
+	<?php if ( 'Disabled' === $enabled['gdpr'] ) : ?>
+		<button class="enable-tool" data-button="gdpr-compliance-tool-v2">Enable Tool</button>
+	<?php endif; ?>
 
-	<h4 style="text-align: left; font-size: 15px;"><?php echo esc_html__( 'Configure', 'sharethis-share-buttons' ); ?></h4>
-	<div class="st-design-message"><?php echo esc_html__( 'Use the settings below to configure your GDPR compliance tool popup.', 'sharethis-share-buttons' ); ?></div>
+	<h4 style="text-align: left; font-size: 15px;">
+		<?php echo esc_html__( 'Configure', 'sharethis-share-buttons' ); ?>
+	</h4>
+	<div class="st-design-message">
+		<?php
+		echo esc_html__(
+			'Use the settings below to configure your GDPR compliance tool popup.',
+			'sharethis-share-buttons'
+		);
+		?>
+	</div>
 
 	<div id="starter-questions">
 		<label>
@@ -84,17 +98,19 @@
 		</div>
 	</div>
 	<?php if ( isset( $vendor_data ) ) : ?>
-	<div class="accor-wrap restrict-vendors">
-		<div class="accor-tab">
-			<span class="accor-arrow">&#9658;</span>
-			<?php echo esc_html__( 'VENDOR EXCLUSIONS', 'sharethis-share-buttons' ); ?>
-		</div>
-		<div class="accor-content">
-			<div class="well">
-				<?php include $this->plugin->dir_path . '/templates/general/gdpr/exclusions.php'; ?>
+		<div class="accor-wrap restrict-vendors">
+			<div class="accor-tab">
+				<span class="accor-arrow">&#9658;</span>
+				<?php echo esc_html__( 'VENDOR EXCLUSIONS', 'sharethis-share-buttons' ); ?>
 			</div>
+			<div class="accor-content">
+				<div class="well">
+					<?php include $this->plugin->dir_path . '/templates/general/gdpr/exclusions.php'; ?>
+				</div>
+			</div
 		</div>
-	</div>
+	<?php endif; ?>
+	<?php if ( 'Enabled' === $enabled['gdpr'] ) : ?>
+		<button class="disable-tool" data-button="gdpr-compliance-tool-v2">Disable Tool</button>
 	<?php endif; ?>
 </div>
-

@@ -25,7 +25,7 @@ class Course extends CommonGraphs\Graph {
 	public function get( $graphData = null ) {
 		$data = [
 			'@type'       => 'Course',
-			'@id'         => ! empty( $graphData->properties->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#course',
+			'@id'         => ! empty( $graphData->id ) ? aioseo()->schema->context['url'] . $graphData->id : aioseo()->schema->context['url'] . '#course',
 			'name'        => ! empty( $graphData->properties->name ) ? $graphData->properties->name : get_the_title(),
 			'description' => ! empty( $graphData->properties->description ) ? $graphData->properties->description : aioseo()->schema->context['description'],
 			'provider'    => [

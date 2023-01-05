@@ -559,10 +559,10 @@ class ES_Forms_Table extends ES_List_Table {
 	
 			$settings = apply_filters( 'ig_es_form_settings', $settings, $data );
 
-			$form_data['body']       = maybe_serialize( $body );
+			$form_data['body'] = maybe_serialize( $body );
 		} else {
-			$form_data['body']     = $data['body'];
-			$settings = $data['settings'];
+			$form_data['body'] = $data['body'];
+			$settings          = $data['settings'];
 		}
 
 		$af_id = ! empty( $data['af_id'] ) ? $data['af_id'] : 0;		

@@ -3,7 +3,7 @@
 *		Plugin Name: WP GoToWebinar
 *		Plugin URI: https://www.northernbeacheswebsites.com.au
 *		Description: Show upcoming GoToWebinars on any post or page or in a widget and register users on your website. 
-*		Version: 14.30
+*		Version: 14.36
 *		Author: Martin Gibson
 *		Author URI:  https://www.northernbeacheswebsites.com.au
 *		Text Domain: wp-gotowebinar   
@@ -364,8 +364,8 @@ add_action( 'admin_enqueue_scripts', 'wp_gotowebinar_register_admin' );
 
 // Include pro functions
 if ($gotowebinar_is_pro == "YES"){ 
-include('inc/pro/pro.php');
-include('inc/pro/options-output-pro.php');
+    include('inc/pro/pro.php');
+    include('inc/pro/options-output-pro.php');
 } 
 //clear cache and deactivation tasks
 require('inc/clear-cache.php');
@@ -1155,98 +1155,117 @@ add_action( 'wp_ajax_delete_log', 'wp_gotowebinar_delete_log_callback' );
 if($gotowebinar_is_pro == "YES"){ 
 
 
-//initialise the update check
-require 'inc/pro/plugin-update-checker/plugin-update-checker.php';
-$updateChecker = Puc_v4_Factory::buildUpdateChecker(
-	'https://northernbeacheswebsites.com.au/?update_action=get_metadata&update_slug=wp-gotowebinar', //Metadata URL.
-	__FILE__, //Full path to the main plugin file.
-	'wp-gotowebinar' //Plugin slug. Usually it's the same as the name of the directory.
-);
+    //initialise the update check
+    require 'inc/pro/plugin-update-checker/plugin-update-checker.php';
+
+    global $plugin_update_checker_wp_gotowebinar;
+
+    $plugin_update_checker_wp_gotowebinar = Puc_v4_Factory::buildUpdateChecker(
+        'https://northernbeacheswebsites.com.au/?update_action=get_metadata&update_slug=wp-gotowebinar', //Metadata URL.
+        __FILE__, //Full path to the main plugin file.
+        'wp-gotowebinar' //Plugin slug. Usually it's the same as the name of the directory.
+    );
 
 
-//add queries to the update call
-$updateChecker->addQueryArgFilter('filter_update_checks_wp_gotowebinar');
-function filter_update_checks_wp_gotowebinar($queryArgs) {
-    
-    
-    $pluginSettings = get_option('gotowebinar_settings');
-    
+    //add queries to the update call
+    $plugin_update_checker_wp_gotowebinar->addQueryArgFilter('filter_update_checks_wp_gotowebinar');
+    function filter_update_checks_wp_gotowebinar($queryArgs) {
+        
+        
+        $pluginSettings = get_option('gotowebinar_settings');
+        
 
-    if(isset($pluginSettings['gotowebinar_licence_activation_purchase_email']) && isset($pluginSettings['gotowebinar_licence_activation_order_id'])){
+        if(isset($pluginSettings['gotowebinar_licence_activation_purchase_email']) && isset($pluginSettings['gotowebinar_licence_activation_order_id'])){
 
-        $purchaseEmailAddress = $pluginSettings['gotowebinar_licence_activation_purchase_email'];
-        $orderId = $pluginSettings['gotowebinar_licence_activation_order_id'];
-        $siteUrl = get_site_url();
+            $purchaseEmailAddress = $pluginSettings['gotowebinar_licence_activation_purchase_email'];
+            $orderId = $pluginSettings['gotowebinar_licence_activation_order_id'];
+            $siteUrl = get_site_url();
+            $siteUrl = parse_url($siteUrl);
+            $siteUrl = $siteUrl['host'];
 
-        if (!empty($purchaseEmailAddress) &&  !empty($orderId)) {
-            $queryArgs['purchaseEmailAddress'] = $purchaseEmailAddress;
-            $queryArgs['orderId'] = $orderId;
-            $queryArgs['siteUrl'] = $siteUrl;
-            $queryArgs['productId'] = '8018';
+            if (!empty($purchaseEmailAddress) &&  !empty($orderId)) {
+                $queryArgs['purchaseEmailAddress'] = $purchaseEmailAddress;
+                $queryArgs['orderId'] = $orderId;
+                $queryArgs['siteUrl'] = $siteUrl;
+                $queryArgs['productId'] = '8018';
+            }
+
         }
 
+        return $queryArgs;   
     }
 
-    return $queryArgs;   
-}
+
+
+    // define the puc_request_info_result-<slug> callback 
+    $plugin_update_checker_wp_gotowebinar->addFilter(
+        'request_info_result', 'filter_puc_request_info_result_slug_wp_gotowebinar', 10, 2
+    );
+    function filter_puc_request_info_result_slug_wp_gotowebinar( $plugininfo, $result ) { 
+        //get the message from the server and set as transient
+        set_transient('wp-gotowebinar-update',$plugininfo->{'message'},YEAR_IN_SECONDS * 1);
+
+        return $plugininfo; 
+    }; 
 
 
 
-// define the puc_request_info_result-<slug> callback 
-function filter_puc_request_info_result_slug_wp_gotowebinar( $plugininfo, $result ) { 
-    //get the message from the server and set as transient
-    set_transient('wp-gotowebinar-update',$plugininfo->{'message'},YEAR_IN_SECONDS * 1);
-
-    return $plugininfo; 
-}; 
-add_filter( "puc_request_info_result-wp-gotowebinar", 'filter_puc_request_info_result_slug_wp_gotowebinar', 10, 2 ); 
 
 
 
+    $path = plugin_basename( __FILE__ );
 
-
-
-$path = plugin_basename( __FILE__ );
-
-add_action("after_plugin_row_{$path}", function( $plugin_file, $plugin_data, $status ) {
-    
-    //get plugin settings
-    $pluginSettings = get_option('gotowebinar_settings');
-    
-    
-    if (!empty($pluginSettings['gotowebinar_licence_activation_purchase_email']) &&  !empty($pluginSettings['gotowebinar_licence_activation_order_id'])) {
+    add_action("after_plugin_row_{$path}", function( $plugin_file, $plugin_data, $status ) {
+        
+        //get plugin settings
+        $pluginSettings = get_option('gotowebinar_settings');
         
         
+        if (!empty($pluginSettings['gotowebinar_licence_activation_purchase_email']) &&  !empty($pluginSettings['gotowebinar_licence_activation_order_id'])) {
+            
+            $order_id = $pluginSettings['gotowebinar_licence_activation_order_id'];
+            
+            //get transient
+            $message = get_transient('wp-gotowebinar-update');
         
-        //get transient
-        $message = get_transient('wp-gotowebinar-update');
-    
-        if($message !== 'Yes'){
+            if($message !== 'Yes' && $message !== false){
 
-            $purchaseLink = 'https://northernbeacheswebsites.com.au/wp-gotowebinar-pro/';
+                $purchaseLink = 'https://northernbeacheswebsites.com.au/wp-gotowebinar-pro/';
 
-            if($message == 'Incorrect Details'){
-                $displayMessage = 'The Order ID and Purchase ID you entered is not correct. Please double check the details you entered to receive product updates.';    
-            } elseif ($message == 'Licence Expired'){
-                $displayMessage = 'Your licence has expired. Please <a href="'.$purchaseLink.'" target="_blank">purchase a new licence</a> to receive further updates for this plugin.';    
-            } elseif ($message == 'Website Mismatch') {
-                $displayMessage = 'This plugin has already been registered on another website using your details. Under the licence terms this plugin can only be used on one website. Please <a href="'.$purchaseLink.'" target="_blank">click here</a> to purchase an additional licence.';    
-            } else {
-                $displayMessage = '';    
+                if($message == 'Incorrect Details'){
+                    $displayMessage = 'The Order ID and Purchase ID you entered is not correct. Please double check the details you entered to receive product updates.';    
+                } elseif ($message == 'Licence Expired'){
+                    $displayMessage = 'Your licence has expired. Please <a href="'.$purchaseLink.'" target="_blank">purchase a new licence</a> to receive further updates for this plugin.';    
+                } elseif ($message == 'Website Mismatch') {
+                    $displayMessage = 'This plugin has already been registered on another website using your details. Under the licence terms this plugin can only be used on one website. Please <a href="'.$purchaseLink.'" target="_blank">click here</a> to purchase an additional licence. To change the website assigned to your licence, please click <a href="https://northernbeacheswebsites.com.au/my-account/view-order/'.$order_id.'/" target="_blank">here</a>.';    
+                } else {
+                    $displayMessage = '';    
+                }
+                
+                echo '<tr class="plugin-update-tr active"><td colspan="3" class="plugin-update colspanchange"><div class="update-message notice inline notice-error notice-alt"><p class="installer-q-icon">'.$displayMessage.'</p></div></td></tr>';
+
             }
             
-            echo '<tr class="plugin-update-tr active"><td colspan="3" class="plugin-update colspanchange"><div class="update-message notice inline notice-error notice-alt"><p class="installer-q-icon">'.$displayMessage.'</p></div></td></tr>';
-
+        } else {
+            
+            echo '<tr class="plugin-update-tr active"><td colspan="3" class="plugin-update colspanchange"><div class="update-message notice inline notice-error notice-alt"><p class="installer-q-icon">Please enter your Order ID and Purchase ID in the plugin settings to receive automatics updates.</p></div></td></tr>';
+            
         }
         
-    } else {
-        
-        echo '<tr class="plugin-update-tr active"><td colspan="3" class="plugin-update colspanchange"><div class="update-message notice inline notice-error notice-alt"><p class="installer-q-icon">Please enter your Order ID and Purchase ID in the plugin settings to receive automatics updates.</p></div></td></tr>';
-        
-    }
-    
 
-}, 10, 3 );
+    }, 10, 3 );
+
+    /**
+    * 
+    *
+    *
+    * Force check for updates
+    */
+    function wp_gotowebinar_force_check_for_updates(){
+        global $plugin_update_checker_wp_gotowebinar;
+        
+        $plugin_update_checker_wp_gotowebinar->checkForUpdates();
+    }
 
 }
 

@@ -102,6 +102,7 @@ var Credentials = ( function( $, wp ) {
 						show_total: true,
 						show_desktop: true,
 						show_mobile_buttons: true,
+						mobile_breakpoint: 1024,
 						spacing: 0,
 						language: 'en'
 					}

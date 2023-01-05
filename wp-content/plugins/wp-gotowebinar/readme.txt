@@ -3,8 +3,8 @@ Contributors: northernbeacheswebsites
 Donate link: https://northernbeacheswebsites.com.au/product/donate-to-northern-beaches-websites/
 Tags: gotowebinar, widget, shortcode, citrix, webinar registration, webinars, upcoming webinars, wpbakery page builder, mailchimp, constant contact
 Requires at least: 3.0.1
-Tested up to: 5.7
-Stable tag: 14.30
+Tested up to: 6.0.2
+Stable tag: 14.36
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -112,6 +112,24 @@ Please see a full list of FAQ's on the plugin settings page for a comprehensive 
 
 
 == Changelog ==
+
+= 14.36 =
+* Compatibility Update
+
+= 14.35 =
+* Fixes and added flexibility for calendar
+
+= 14.34 =
+* Bug fixes
+
+= 14.33 =
+* Force check for plugin updates
+
+= 14.32 =
+* Added filter to change recording assets
+
+= 14.31 =
+* Ability to filter recording assets start date
 
 = 14.30 =
 * Fix for timezone conversion
@@ -620,6 +638,24 @@ Please see a full list of FAQ's on the plugin settings page for a comprehensive 
 
 
 == Upgrade Notice ==
+
+= 14.36 =
+* Compatibility Update
+
+= 14.35 =
+* Fixes and added flexibility for calendar
+
+= 14.34 =
+* Bug fixes
+
+= 14.33 =
+* Force check for plugin updates
+
+= 14.32 =
+* Added filter to change recording assets
+
+= 14.31 =
+* Ability to filter recording assets start date
 
 = 14.30 =
 * Fix for timezone conversion

@@ -25,13 +25,15 @@ class Network extends CommonApi\Network {
 	public static function fetchSites( $request ) {
 		$filter     = $request->get_param( 'filter' );
 		$body       = $request->get_json_params();
+		$orderBy    = ! empty( $body['orderBy'] ) ? sanitize_text_field( $body['orderBy'] ) : 'id';
+		$orderDir   = ! empty( $body['orderDir'] ) && ! empty( $body['orderBy'] ) ? strtoupper( sanitize_text_field( $body['orderDir'] ) ) : 'DESC';
 		$limit      = ! empty( $body['limit'] ) ? intval( $body['limit'] ) : null;
-		$offset     = ! empty( $body['offset'] ) ? intval( $body['offset'] ) : null;
+		$offset     = ! empty( $body['offset'] ) ? intval( $body['offset'] ) : 0;
 		$searchTerm = ! empty( $body['searchTerm'] ) ? sanitize_text_field( $body['searchTerm'] ) : null;
 
 		return new \WP_REST_Response( [
 			'success' => true,
-			'sites'   => aioseo()->helpers->getSites( $limit, $offset, $searchTerm, $filter )
+			'sites'   => aioseo()->helpers->getSites( $limit, $offset, $searchTerm, $filter, $orderBy, $orderDir )
 		], 200 );
 	}
 

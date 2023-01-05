@@ -154,7 +154,7 @@ class Breadcrumbs extends \AIOSEO\Plugin\Common\Breadcrumbs\Breadcrumbs {
 		}
 
 		if ( $show ) {
-			return parent::getHomePageCrumb( $type, $reference );
+			return parent::getHomePageCrumb();
 		}
 	}
 

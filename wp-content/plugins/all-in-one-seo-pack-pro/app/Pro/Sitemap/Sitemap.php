@@ -30,11 +30,12 @@ class Sitemap extends CommonSitemap\Sitemap {
 		$this->ping          = new CommonSitemap\Ping();
 		$this->output        = new CommonSitemap\Output();
 		$this->xsl           = new CommonSitemap\Xsl();
-		$this->localization  = new CommonSitemap\Localization();
 		$this->query         = new Query();
 		$this->priority      = new Priority();
 		$this->helpers       = new Helpers();
 		$this->requestParser = new RequestParser;
+
+		new CommonSitemap\Localization();
 
 		$this->disableWpSitemap();
 	}
@@ -61,7 +62,7 @@ class Sitemap extends CommonSitemap\Sitemap {
 			return;
 		}
 
-		require_once( ABSPATH . 'wp-admin/includes/file.php' );
+		require_once ABSPATH . 'wp-admin/includes/file.php';
 		$files = list_files( get_home_path(), 1 );
 		if ( ! count( $files ) ) {
 			return;

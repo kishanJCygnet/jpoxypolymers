@@ -362,10 +362,10 @@ class ES_Shortcode {
 		// Don't show form if submission was successful.
 		if ( 'success' !== $message_class) {
 			$form_action_url             = ES_Common::get_current_request_url();
-			$enable_ajax_form_submission = get_option( 'ig_es_enable_ajax_form_submission', 'no' );
+			$enable_ajax_form_submission = get_option( 'ig_es_enable_ajax_form_submission', 'yes' );
 			$extra_form_class            = ( 'yes' == $enable_ajax_form_submission ) ? ' es_ajax_subscription_form' : '';
 
-			$form_header_html .= '<form action="' . $form_action_url . '#es_form_' . self::$form_identifier . '" method="post" class="es_subscription_form es_shortcode_form ' . esc_attr( $extra_form_class ) . '" id="es_subscription_form_' . $unique_id . '" data-source="ig-es" >';
+			$form_header_html .= '<form action="' . $form_action_url . '#es_form_' . self::$form_identifier . '" method="post" class="es_subscription_form es_shortcode_form ' . esc_attr( $extra_form_class ) . '" id="es_subscription_form_' . $unique_id . '" data-source="ig-es" data-form-id="' . $form_id . '">';
 				
 			if ( '' != $desc ) {
 				$form_header_html .= '<div class="es_caption">' . $desc . '</div>';
@@ -413,7 +413,13 @@ class ES_Shortcode {
 					$form_html .= $list_html;
 				}
 
-				$form_body  = ! empty( $data['settings']['dnd_editor_css'] ) ? '<style>' . $data['settings']['dnd_editor_css'] . '</style>' : '';
+				$form_body = '';
+				if ( ! empty( $data['settings']['dnd_editor_css'] ) ) {
+					$editor_css = $data['settings']['dnd_editor_css'];
+					// We are using attribute selector data-form-id to apply Form style and not form unique id since when using it, it overrides Grapejs custom style changes.
+					$editor_css = str_replace( '.es-form-field-container', 'form[data-form-id="' . $form_id . '"] .es-form-field-container', $editor_css );
+					$form_body  = '<style type="text/css">' . $editor_css . '</style>';
+				}
 				$form_body .= ! empty( $data['body'] ) ? do_shortcode( $data['body'] ) : '';
 				$form = array( $form_header_html, $form_html, $form_data_html, $form_body );
 				$form_orig_html = implode( '', $form );

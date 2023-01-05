@@ -28,19 +28,6 @@ class Meta extends CommonMigration\Meta {
 	private $videoSitemap = null;
 
 	/**
-	 * Class constructor.
-	 *
-	 * @since 4.0.2
-	 */
-	public function __construct() {
-		if ( ! is_admin() ) {
-			return;
-		}
-
-		add_action( 'init', [ $this, 'instantiateVideoSitemap' ] );
-	}
-
-	/**
 	 * Instantiates the Video Sitemap video class if the addon is installed and active.
 	 *
 	 * @since 4.0.2
@@ -48,7 +35,10 @@ class Meta extends CommonMigration\Meta {
 	 * @return void
 	 */
 	public function instantiateVideoSitemap() {
-		include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+		if ( null !== $this->videoSitemap ) {
+			return;
+		}
+
 		$videoSitemap = aioseo()->addons->getAddon( 'aioseo-video-sitemap' );
 		if (
 			! empty( $videoSitemap ) &&
@@ -73,6 +63,7 @@ class Meta extends CommonMigration\Meta {
 	public function migrateAdditionalPostMeta( $postId ) {
 		parent::migrateAdditionalPostMeta( $postId );
 
+		$this->instantiateVideoSitemap();
 		if ( $this->videoSitemap ) {
 			$post = get_post( $postId );
 			$this->videoSitemap->scanPost( $post );
@@ -109,7 +100,7 @@ class Meta extends CommonMigration\Meta {
 	 */
 	public function migrateTermMeta() {
 		if ( aioseo()->core->cache->get( 'v3_migration_in_progress_settings' ) ) {
-			aioseo()->helpers->scheduleSingleAction( 'aioseo_migrate_term_meta', 30, [], true );
+			aioseo()->actionScheduler->scheduleSingle( 'aioseo_migrate_term_meta', 30, [], true );
 
 			return;
 		}

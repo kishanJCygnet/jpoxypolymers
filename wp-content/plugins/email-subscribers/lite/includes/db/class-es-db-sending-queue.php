@@ -181,8 +181,14 @@ class ES_DB_Sending_Queue {
 
 		$result = $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(*) AS count FROM {$wpdb->prefix}ig_sending_queue WHERE status IN ( %s, %s, %s )",
-				array( 
+				"SELECT COUNT(*) AS count FROM {$wpdb->prefix}ig_sending_queue
+					WHERE
+					`mailing_queue_id` IN( SELECT id FROM {$wpdb->prefix}ig_mailing_queue WHERE status IN( %s, %s ) )
+					AND
+					status IN ( %s, %s, %s )",
+				array(
+					IG_ES_MAILING_QUEUE_STATUS_QUEUED,
+					IG_ES_MAILING_QUEUE_STATUS_SENDING,
 					IG_ES_SENDING_QUEUE_STATUS_QUEUED,
 					IG_ES_SENDING_QUEUE_STATUS_SENDING,
 					IG_ES_SENDING_QUEUE_STATUS_FAILED

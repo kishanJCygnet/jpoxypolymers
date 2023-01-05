@@ -172,7 +172,7 @@ class Options extends CommonOptions\Options {
 				'searchAppearanceSettings'  => [ 'type' => 'boolean', 'default' => false ],
 				'socialNetworksSettings'    => [ 'type' => 'boolean', 'default' => false ],
 				'sitemapSettings'           => [ 'type' => 'boolean', 'default' => false ],
-				'redirectsManage'           => [ 'type' => 'boolean', 'default' => true ],
+				'redirectsManage'           => [ 'type' => 'boolean', 'default' => false ],
 				'pageRedirectsManage'       => [ 'type' => 'boolean', 'default' => true ],
 				'redirectsSettings'         => [ 'type' => 'boolean', 'default' => false ],
 				'seoAnalysisSettings'       => [ 'type' => 'boolean', 'default' => false ],
@@ -185,7 +185,7 @@ class Options extends CommonOptions\Options {
 				'pageSocialSettings'        => [ 'type' => 'boolean', 'default' => true ],
 				'localSeoSettings'          => [ 'type' => 'boolean', 'default' => false ],
 				'pageLocalSeoSettings'      => [ 'type' => 'boolean', 'default' => true ],
-				'linkAssistantSettings'     => [ 'type' => 'boolean', 'default' => true ],
+				'linkAssistantSettings'     => [ 'type' => 'boolean', 'default' => false ],
 				'pageLinkAssistantSettings' => [ 'type' => 'boolean', 'default' => true ],
 				'setupWizard'               => [ 'type' => 'boolean', 'default' => false ]
 			]
@@ -561,7 +561,7 @@ class Options extends CommonOptions\Options {
 		$validLicenseKey = aioseo()->internalOptions->internal->validLicenseKey;
 		if ( $validLicenseKey ) {
 			// Save the key to our settings.
-			$this->general->licenseKey = $validLicenseKey;
+			$this->general->licenseKey = $validLicenseKey;// @phpstan-ignore-line
 			$this->save( true );
 
 			// Reset the key coming in from lite.

@@ -38,9 +38,7 @@ class Title extends CommonMeta\Title {
 		if ( ! empty( $metaData->title ) && ! $default ) {
 			$title = $metaData->title;
 			// Since we might be faking the term, let's replace the title ourselves.
-			if ( ! empty( $term ) ) {
-				$title = aioseo()->helpers->pregReplace( '/#taxonomy_title/', $term->name, $title );
-			}
+			$title = aioseo()->helpers->pregReplace( '/#taxonomy_title/', $term->name, $title );
 			$title = $this->helpers->prepare( $title, $term->term_id );
 		}
 
