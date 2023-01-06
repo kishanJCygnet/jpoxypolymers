@@ -203,45 +203,5 @@
 	
 		
 <?php wp_footer(); ?>
-
-<ul class="Website-list">
-	<li class="nav-item ">
-		<a class="nav-link gp-website" href="javascript:void(0);">Group Websites</a> 
-		<div class="innerweb-list">
-			<h2>Group Websites</h2>
-		<?php /* Group website links start */
-			if (have_rows('group_websites', 'option')) : ?>
-			<ul>
-				<?php while (have_rows('group_websites', 'option')) : the_row(); 
-						if (get_sub_field('website_url', 'option') && get_sub_field('website_title', 'option')) { ?>
-						<li>
-							<a href="<?php echo the_sub_field('website_url', 'option'); ?>" title="<?php echo the_sub_field('website_title', 'option'); ?>" ><?php echo the_sub_field('website_title', 'option'); ?></a>
-							<?php if (get_sub_field('website_description', 'option')){ ?>
-								<span><?php echo the_sub_field('website_description', 'option'); ?></span>
-							<?php } ?>
-						</li>
-						<?php } 
-					endwhile; ?>
-			</ul>
-			<?php endif; 
-			/* Group website links end */ ?>	
-			</div>
-	</li>
-</ul>
-
-<div class="modal fade" id="sigrid" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-body">
- <a href="#" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></a>
-        <div class="text-center">
-<div class="brand-vid ratio ratio-16x9">
-<iframe src="https://www.youtube.com/embed/RCHU_LCn_sg" title="" allowfullscreen=""></iframe>
-</div>
-</div>
-      </div>    
-    </div>
-  </div>
-</div>
 </body>
 </html>

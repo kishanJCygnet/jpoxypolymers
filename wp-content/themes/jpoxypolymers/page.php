@@ -15,6 +15,9 @@ get_header();
 while ( have_posts() ) :
 	the_post();
 	//get_template_part( 'template-parts/content/content-page' );
+	if(is_cart() || is_checkout()){ 
+		get_template_part( 'template-parts/content/content-page' );
+	 } 
 	
 	/* flexible content Start */
 	   $pageId = get_the_ID();
