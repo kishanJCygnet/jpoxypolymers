@@ -1,0 +1,194 @@
+// Footer Content
+.footer {
+   
+    color: #0D0D0D;   
+    /* border-top: 1px solid rgba(255,255,255,.3); */
+    // background-image: url(../../images/curve.png);
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: top;
+    background-size: cover;
+    background-color: #fff;
+    @include bp(sm-max){
+        background-size: contain;
+    }
+    .footer-container{
+        // background: rgb(161 205 255 / 11%);
+        text-align: right;      
+        padding: 30px 0; 
+        .footer-contents {
+            // align-items: flex-end!important;
+            // flex-direction: column;
+            @include bp(md-max) {
+                flex-wrap: wrap;
+                text-align: center;
+                justify-content: center !important;
+            }
+            @include bp(sm-max) {
+                justify-content: center !important;
+            }
+        }
+        .container{
+        //    padding-top: 40px;
+            @include bp(sm-max) {
+                // background-color: rgb(31 72 117);
+                width: 100%;
+                max-width: 100%;
+            }
+
+        }
+    }
+    a {
+        text-decoration: none;
+        color: #0D0D0D;
+        line-height: 1.5;
+    }
+    @include bp(xl-max) {
+        position: relative;
+        z-index: 1;
+    }
+    .social-media {
+        margin-bottom: 10px;
+        text-align: center;
+         .textPrimery{
+          &  > span{
+              padding: 0 10px;
+              position: relative;
+              &:after {
+                    content: "|";
+                    position: absolute;
+                    left: -2px;
+                    top: 3px;
+                    color: #c6c6c6;
+
+                }
+                &:first-child{
+                    &::after{
+                        display: none;
+                    }
+                }
+            }
+        }
+        @include bp(md-max) {
+            justify-content: center;
+            line-height: 1.8;
+        }
+        a{
+            &:hover{
+                color:#19c5e3;
+            }
+        }
+    }
+}
+
+.footer-logo {  
+   margin-right: 0px;
+    position: relative;
+    // margin-bottom: 15px;
+    & + div{
+        // width: 100%;
+    }
+    @include bp(md-max) {
+        margin-right: 0;
+        margin-bottom: 15px;
+        width: 100%;
+        text-align: center;
+    }
+    img {
+        width:230px;
+        @include bp(md-max) {
+            width: 220px;
+            // margin-bottom: 20px;
+        }
+    }
+    // &::after {
+    //     content: "";
+    //     position: absolute;
+    //     top: 0;
+    //     bottom: 0;
+    //     width: 3px;
+    //     background-color: white;
+    //     right: -38px;
+
+    //     @include bp(md-max) {
+    //         display: none;
+    //     }
+    // }
+}
+.terms-condition{
+    @include bp(md-max){
+        width: 100%;
+    }
+    
+}
+.footer-links {
+    font-size:15px;
+    justify-content: center;
+    display: flex;
+    padding-left: 0;
+    @include bp(sm-max){
+        flex-wrap: wrap;
+    }
+ 
+  
+    address{
+        margin-bottom: 0 !important;
+        display: flex !important;
+        align-items: center;
+        line-height: 1.3;
+        padding-right: 10px;
+        @include bp(sm-max){
+            padding-right: 0px;
+            margin-bottom: 10px !important;
+        }      
+    }
+    &#menu-footer-links{
+        margin-left: 0;
+    }
+    li {
+        display: inline-block;
+        vertical-align: middle;
+        position: relative;
+        padding: 0 10px;
+        &:after {
+            content: "|";
+            position: absolute;
+            left: -2px;
+            top: 3px;
+            color: #c6c6c6;
+        }
+        &:last-child{
+            padding-right: 0;
+        }
+        &:first-child{
+            
+            @include bp(sm-max){
+                &::after{
+                    display: none;
+                }
+            }
+        }
+    }
+}
+.footer-social-icons{
+    display: flex;
+    a{
+        display: inline-flex !important;
+        width: 30px;
+        height: 30px;
+        background-color: #0f7fa2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        @include bp(md-max){
+            margin-top: 15px;
+            
+        }
+        &:hover{
+            background-color: #3cb4e7;
+        }
+    }
+}
+
+// End Footer Content
