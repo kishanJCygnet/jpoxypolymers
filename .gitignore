@@ -1,0 +1,23 @@
+*.xml
+*.md
+*.yml
+*.npmignore
+*.jshintrc
+*.gitattributes
+*.node
+*.cmd
+*.lnk
+*.ts
+*.iml
+*.log
+*.zip
+.DS_Store
+node_modules/*
+vendor/
+
+wp-config.php
+# Ignore ftpconfig file
+.ftpconfig
+
+# Ignore htaccess
+.htaccess

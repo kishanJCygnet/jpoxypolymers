@@ -1,0 +1,85 @@
+.multiple-images{
+    .multiple_inner_content{
+        display: flex;
+        align-items: center;
+        position: relative;
+        z-index: 2;
+        @include bp(md-max){
+            flex-wrap: wrap;   
+        }
+        .col-left{
+            width: 35%;
+            padding-right: 30px;
+            @include bp(md-max){
+                width: 100%;  
+                padding-right: 0;
+                margin-bottom: 15px;
+            }
+            @include bp(sm-max){
+                text-align: center;
+            }
+          h3{
+              color:#0D3461;
+              font-size: 24px;
+            }
+        }
+        .col-right{
+            width: 65%;
+            padding-left: 30px;
+            @include bp(md-max){
+                width: 100%;  
+                padding-left: 0;
+            }
+        }
+    }
+    .image-list{
+        padding-left: 0;
+        list-style-type: none;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        grid-auto-rows: 60px;
+        grid-auto-flow: dense;
+        grid-gap: 19px;
+        li{
+            display: flex;
+            height: 100%;
+            width: 100%;
+            grid-column: auto / span 1;
+            grid-row: span 3;
+            margin-top: 30px;
+            @include bp(sm-max){
+                margin-top: 0;
+            }
+            img{
+                width: 100%;
+                height: 100%;
+                border-radius: 50px;
+                object-fit: cover;
+            }          
+          
+           
+            &:nth-child(2),
+            &:last-child{
+                grid-row: span 2;
+                margin-top: 0;
+            }
+            &:nth-child(4){
+                margin-top: 0;
+            }
+        }
+       
+    }
+    &.left-multi-image{
+        .multiple_inner_content{
+            flex-direction: row-reverse;
+            .col-left{
+                padding-right: 0;
+                padding-left: 30px;
+            }
+            .col-right{
+                padding-left: 0;
+                padding-right: 30px;
+            }
+        }
+    }
+}
